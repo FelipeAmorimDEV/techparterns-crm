@@ -50,11 +50,14 @@ public class GlobalExceptionHandler implements ExceptionMapper<Throwable> {
         if (exception instanceof IllegalArgumentException) {
             return new ErroMapeado(Response.Status.BAD_REQUEST, exception.getMessage(), "REQUISICAO_INVALIDA");
         }
-        if (exception instanceof IllegalStateException
-                && exception.getMessage() != null
-                && exception.getMessage().contains("Tenant")) {
-            return new ErroMapeado(Response.Status.UNAUTHORIZED, exception.getMessage(), "TENANT_AUSENTE");
-        }
+        // TODO: requireCompanyId() lança "Company ausente no token", então esta
+        // checagem por "Tenant" não cobre mais empresa ausente. Ajustar a mensagem
+        // ou o critério antes de voltar a mapear TENANT_AUSENTE.
+        // if (exception instanceof IllegalStateException
+        //         && exception.getMessage() != null
+        //         && exception.getMessage().contains("Tenant")) {
+        //     return new ErroMapeado(Response.Status.UNAUTHORIZED, exception.getMessage(), "TENANT_AUSENTE");
+        // }
         var causa = exception;
         while (causa != null) {
             if (causa instanceof InvalidFormatException) {
