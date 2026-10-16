@@ -51,7 +51,7 @@ public class DefinirSenhaPorTokenUseCase implements UseCase<DefinirSenhaCommand,
     @Transactional
     public Result<Void> execute(DefinirSenhaCommand cmd) {
         var agora = clock.instant();
-        if (cmd.token() == null || cmd.token().isBlank())
+        if (cmd == null || cmd.token() == null || cmd.token().isBlank())
             return Result.fail(ErroIdentidade.TOKEN_SENHA_INVALIDO.mensagem());
         var token = tokens.buscarPorHash(gerador.hash(cmd.token())).orElse(null);
         if (token == null || !token.estaValido(agora))

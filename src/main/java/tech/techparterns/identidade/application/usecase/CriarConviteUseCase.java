@@ -45,14 +45,15 @@ public class CriarConviteUseCase implements UseCase<CriarConviteCommand, Convite
     @Transactional
     public Result<ConviteCriadoDto> execute(CriarConviteCommand cmd) {
         EmailUsuario email = null;
-        if (cmd.email() != null && !cmd.email().isBlank()) {
+        if (cmd != null && cmd.email() != null && !cmd.email().isBlank()) {
             var r = EmailUsuario.tryCreate(cmd.email());
             if (r.isFailure()) return Result.propagate(r);
             email = r.getValue();
         }
         String plano = gerador.gerar();
-        var convite = Convite.tryCreate(contexto.empresaId(), email, gerador.hash(plano), cmd.expiraEm(),
-                cmd.maxUsos(), contexto.userId(), clock.instant());
+        var convite = Convite.tryCreate(contexto.empresaId(), email, gerador.hash(plano),
+                cmd == null ? null : cmd.expiraEm(), cmd == null ? null : cmd.maxUsos(), contexto.userId(),
+                clock.instant());
         if (convite.isFailure())
             return Result.propagate(convite);
         var c = convite.getValue();

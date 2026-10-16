@@ -74,8 +74,8 @@ public class LoginUseCase implements UseCase<LoginCommand, SessaoEmitida> {
             throw new LimiteExcedidoException("Muitas tentativas. Tente novamente mais tarde.", taxa.retryAfterSegundos());
 
         var agora = clock.instant();
-        String emailTexto = cmd.email() == null ? "" : cmd.email().trim().toLowerCase(Locale.ROOT);
-        String senha = cmd.senha() == null ? "" : cmd.senha();
+        String emailTexto = cmd == null || cmd.email() == null ? "" : cmd.email().trim().toLowerCase(Locale.ROOT);
+        String senha = cmd == null || cmd.senha() == null ? "" : cmd.senha();
         String emailHash = gerador.hashTexto(emailTexto);
 
         if (controle.estaBloqueado(emailHash, ip, agora)) {

@@ -52,17 +52,18 @@ public class AceitarConviteUseCase implements UseCase<AceitarConviteCommand, Res
 
     @Override
     public Result<RespostaDto> execute(AceitarConviteCommand cmd) {
-        var nome = NomeUsuario.tryCreate(cmd.nome());
-        var email = EmailUsuario.tryCreate(cmd.email());
-        var telefone = TelefoneUsuario.tryCreateOpcional(cmd.telefone());
-        var senha = SenhaPlana.tryCreate(cmd.senha());
+        var nome = NomeUsuario.tryCreate(cmd == null ? null : cmd.nome());
+        var email = EmailUsuario.tryCreate(cmd == null ? null : cmd.email());
+        var telefone = TelefoneUsuario.tryCreateOpcional(cmd == null ? null : cmd.telefone());
+        var senha = SenhaPlana.tryCreate(cmd == null ? null : cmd.senha());
         var validacao = Result.combineAll(nome, email, telefone, senha);
         if (validacao.isFailure())
             return Result.propagate(validacao);
 
         try {
             transacao.emNovaTransacao(() -> {
-                aceitar(cmd.token(), nome.getValue(), email.getValue(), telefone.getValue(), senha.getValue());
+                aceitar(cmd == null ? null : cmd.token(), nome.getValue(), email.getValue(), telefone.getValue(),
+                        senha.getValue());
                 return Boolean.TRUE;
             });
         } catch (ViolacaoUnicidadeException e) {

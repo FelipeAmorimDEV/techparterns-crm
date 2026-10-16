@@ -64,10 +64,10 @@ public class CadastrarUsuarioUseCase implements UseCase<CadastrarUsuarioCommand,
         var empresaId = contexto.empresaId();
         var adminId = contexto.userId();
 
-        var nome = NomeUsuario.tryCreate(cmd.nome());
-        var email = EmailUsuario.tryCreate(cmd.email());
-        var telefone = TelefoneUsuario.tryCreateOpcional(cmd.telefone());
-        var papel = PapelParser.parse(cmd.role(), PapelUsuario.SELLER);
+        var nome = NomeUsuario.tryCreate(cmd == null ? null : cmd.nome());
+        var email = EmailUsuario.tryCreate(cmd == null ? null : cmd.email());
+        var telefone = TelefoneUsuario.tryCreateOpcional(cmd == null ? null : cmd.telefone());
+        var papel = PapelParser.parse(cmd == null ? null : cmd.role(), PapelUsuario.SELLER);
         var validacao = Result.combineAll(nome, email, telefone, papel);
         if (validacao.isFailure())
             return Result.propagate(validacao);
