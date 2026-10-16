@@ -56,7 +56,7 @@ public class SolicitarRecuperacaoSenhaUseCase implements UseCase<SolicitarRecupe
             throw new LimiteExcedidoException("Muitas solicitações. Tente novamente mais tarde.", taxa.retryAfterSegundos());
 
         boolean enviado = false;
-        var email = EmailUsuario.tryCreate(cmd.email());
+        var email = EmailUsuario.tryCreate(cmd == null ? null : cmd.email());
         if (email.isOk()) {
             var usuario = usuarios.buscarPorEmail(email.getValue()).orElse(null);
             if (usuario != null && usuario.status() == StatusUsuario.ACTIVE) {

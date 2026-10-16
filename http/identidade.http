@@ -178,6 +178,7 @@ Authorization: Bearer {{tokenAdmin}}
 ###############################################################
 
 ### Cadastrar usuário (role: ADMIN | SELLER; padrão SELLER)
+# Resposta neutra 202 (só mensagem) — o id vem da listagem abaixo.
 # @name cadastrarUsuario
 POST {{host}}/usuarios
 Authorization: Bearer {{tokenAdmin}}
@@ -190,12 +191,13 @@ Content-Type: application/json
   "role": "SELLER"
 }
 
-###
-@usuarioId = {{cadastrarUsuario.response.body.id}}
-
 ### Listar usuários (filtros: page, size, status, role)
-GET {{host}}/usuarios?page=0&size=20&status=ACTIVE&role=SELLER
+# @name listarUsuarios
+GET {{host}}/usuarios?page=0&size=20&status=PENDING&role=SELLER
 Authorization: Bearer {{tokenAdmin}}
+
+###
+@usuarioId = {{listarUsuarios.response.body.itens.0.id}}
 
 ### Listar todos
 GET {{host}}/usuarios

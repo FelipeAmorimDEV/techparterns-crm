@@ -47,10 +47,10 @@ public class CriarEmpresaUseCase implements UseCase<CriarEmpresaCommand, Empresa
 
     @Override
     public Result<EmpresaCriadaDto> execute(CriarEmpresaCommand cmd) {
-        var nomeEmpresa = NomeEmpresa.tryCreate(cmd.nome());
-        var adminNome = NomeUsuario.tryCreate(cmd.adminNome());
-        var adminEmail = EmailUsuario.tryCreate(cmd.adminEmail());
-        var telefone = TelefoneUsuario.tryCreateOpcional(cmd.adminTelefone());
+        var nomeEmpresa = NomeEmpresa.tryCreate(cmd == null ? null : cmd.nome());
+        var adminNome = NomeUsuario.tryCreate(cmd == null ? null : cmd.adminNome());
+        var adminEmail = EmailUsuario.tryCreate(cmd == null ? null : cmd.adminEmail());
+        var telefone = TelefoneUsuario.tryCreateOpcional(cmd == null ? null : cmd.adminTelefone());
         var validacao = Result.combineAll(nomeEmpresa, adminNome, adminEmail, telefone);
         if (validacao.isFailure())
             return Result.propagate(validacao);

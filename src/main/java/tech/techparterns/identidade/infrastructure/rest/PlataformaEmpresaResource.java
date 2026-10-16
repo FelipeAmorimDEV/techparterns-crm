@@ -75,7 +75,8 @@ public class PlataformaEmpresaResource {
             @APIResponse(responseCode = "404", description = "Empresa não encontrada.")
     })
     public Response editar(@PathParam("id") UUID id, EditarEmpresaCommand cmd) {
-        Respostas.valor(editar.execute(new EditarEmpresaCommand(id, cmd.nome())));
+        String nome = cmd == null ? null : cmd.nome();
+        Respostas.valor(editar.execute(new EditarEmpresaCommand(id, nome)));
         return Response.noContent().build();
     }
 
@@ -89,7 +90,19 @@ public class PlataformaEmpresaResource {
             @APIResponse(responseCode = "409", description = "Empresa já suspensa.")
     })
     public Response suspender(@PathParam("id") UUID id, SuspenderEmpresaCommand cmd) {
-        String motivo = cmd == null ? null : cmd.motivo();
+        return suspenderEmpresa(id, cmd == null ? null : cmd.motivo());
+    }
+
+    /** Aceita POST sem Content-Type / sem corpo (motivo omitido), como {@code /reativar}. */
+    @POST
+    @Path("/{id}/suspender")
+    @Consumes(MediaType.WILDCARD)
+    @Operation(hidden = true)
+    public Response suspenderSemCorpo(@PathParam("id") UUID id) {
+        return suspenderEmpresa(id, null);
+    }
+
+    private Response suspenderEmpresa(UUID id, String motivo) {
         Respostas.valor(suspender.execute(new SuspenderEmpresaCommand(id, motivo)));
         return Response.noContent().build();
     }
@@ -119,7 +132,19 @@ public class PlataformaEmpresaResource {
             @APIResponse(responseCode = "429", description = "Intervalo mínimo de 60 s entre envios.")
     })
     public Response reenviar(@PathParam("id") UUID id, ReenviarSetupAdminCommand cmd) {
-        UUID usuarioId = cmd == null ? null : cmd.usuarioId();
+        return reenviarSetup(id, cmd == null ? null : cmd.usuarioId());
+    }
+
+    /** Aceita POST sem Content-Type / sem corpo (escolhe o único admin PENDING). */
+    @POST
+    @Path("/{id}/reenviar-definicao-senha-admin")
+    @Consumes(MediaType.WILDCARD)
+    @Operation(hidden = true)
+    public Response reenviarSemCorpo(@PathParam("id") UUID id) {
+        return reenviarSetup(id, null);
+    }
+
+    private Response reenviarSetup(UUID id, UUID usuarioId) {
         Respostas.valor(reenviar.execute(new ReenviarSetupAdminCommand(id, usuarioId)));
         return Response.accepted().build();
     }
@@ -129,11 +154,15 @@ public class PlataformaEmpresaResource {
     @Operation(summary = "Recuperar empresa sem admin ativo")
     @APIResponses({
             @APIResponse(responseCode = "201", description = "Novo admin PENDING criado."),
+            @APIResponse(responseCode = "400", description = "Dados inválidos."),
             @APIResponse(responseCode = "404", description = "Empresa não encontrada."),
             @APIResponse(responseCode = "409", description = "Empresa suspensa, com admin ativo ou e-mail em uso.")
     })
     public Response recuperar(@PathParam("id") UUID id, RecuperarEmpresaCommand cmd) {
-        var resultado = recuperar.execute(new RecuperarEmpresaCommand(id, cmd.adminNome(), cmd.adminEmail(), cmd.adminTelefone()));
+        String adminNome = cmd == null ? null : cmd.adminNome();
+        String adminEmail = cmd == null ? null : cmd.adminEmail();
+        String adminTelefone = cmd == null ? null : cmd.adminTelefone();
+        var resultado = recuperar.execute(new RecuperarEmpresaCommand(id, adminNome, adminEmail, adminTelefone));
         return Response.status(Response.Status.CREATED).entity(Respostas.valor(resultado)).build();
     }
 }

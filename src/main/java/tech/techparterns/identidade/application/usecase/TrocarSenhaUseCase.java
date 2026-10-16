@@ -46,10 +46,11 @@ public class TrocarSenhaUseCase implements UseCase<TrocarSenhaCommand, Void> {
     public Result<Void> execute(TrocarSenhaCommand cmd) {
         var usuario = usuarios.buscarPorId(contexto.userId(), contexto.empresaId())
                 .orElseThrow(() -> new RecursoNaoEncontradoException(ErroIdentidade.USUARIO_NAO_ENCONTRADO.mensagem()));
-        if (usuario.hashSenha() == null || SenhaPlana.excedeLimite(cmd.senhaAtual())
-                || !hasher.confere(cmd.senhaAtual(), usuario.hashSenha()))
+        String senhaAtual = cmd == null ? null : cmd.senhaAtual();
+        if (usuario.hashSenha() == null || SenhaPlana.excedeLimite(senhaAtual)
+                || !hasher.confere(senhaAtual == null ? "" : senhaAtual, usuario.hashSenha()))
             return Result.fail(ErroIdentidade.SENHA_ATUAL_INCORRETA.mensagem());
-        var nova = SenhaPlana.tryCreate(cmd.novaSenha());
+        var nova = SenhaPlana.tryCreate(cmd == null ? null : cmd.novaSenha());
         if (nova.isFailure())
             return Result.propagate(nova);
         usuario.definirSenha(hasher.hash(nova.getValue()));
