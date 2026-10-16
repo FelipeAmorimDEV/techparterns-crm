@@ -2,7 +2,9 @@ package tech.techparterns.shared.domain.exception;
 
 public enum ErroDominio {
 
-    EMPRESA_OBRIGATORIA("Empresa é obrigatória");
+    EMPRESA_OBRIGATORIA("Empresa é obrigatória"),
+    OPERACAO_RESTRITA_AO_ADMIN("Operação restrita ao admin"),
+    LEAD_NAO_ENCONTRADO("Lead não encontrado");
 
     private final String mensagem;
 

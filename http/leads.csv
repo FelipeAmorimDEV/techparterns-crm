@@ -1,0 +1,7 @@
+nome_contato,telefone,whatsapp,email
+Maria Silva,+551134567890,+5511987654321,maria.silva@exemplo.com
+João Pereira,,+5521998765432,joao.pereira@exemplo.com
+Ana Souza,+553132221100,,
+"Costa, Carlos",,,carlos.costa@exemplo.com
+Lead Inválido,12345,,email-invalido
+Sem Contato,,,
