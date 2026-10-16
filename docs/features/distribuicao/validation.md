@@ -3,140 +3,95 @@
 ## 1. Identificação da spec avaliada
 
 - **Spec:** `docs/features/distribuicao/spec.md`
-- **Discovery:** `docs/features/distribuicao/discovery.md`, marcado como aprovado em 16 de outubro de 2026
+- **Discovery:** `docs/features/distribuicao/discovery.md`, aprovado em 16 de outubro de 2026, com a seção «Decisões posteriores» do mesmo dia
 - **Feature:** Distribuição (`distribuicao`)
 - **Data da avaliação:** 16 de outubro de 2026
 
-A spec existe e declara o mesmo discovery como entrada. O discovery está aprovado. A spec informa que ela própria não está validada. Esta avaliação não reescreve a spec e não produz plano.
+Esta é a segunda avaliação. A primeira, também de 16 de outubro de 2026, terminou em **REPROVADA**. O usuário autorizou substituir este arquivo depois que a spec e o discovery foram corrigidos. A spec continua declarando que não está validada. Esta avaliação não reescreve a spec e não produz plano.
 
 ## 2. Resumo da avaliação
 
-A spec não pode servir de base de planejamento. Ela acompanha a maior parte das decisões aprovadas e separa proposta técnica de requisito, mas deixa em aberto comportamentos que mudam quem recebe o lead e, ao mesmo tempo, transforma uma dessas aberturas em regra.
+A spec pode servir de base de planejamento. Os quatro bloqueios da avaliação anterior e a unidade de «N dias» estão decididos no discovery e repetidos na spec, sem contradição entre RN e a seção 10.
 
-Decisão: **REPROVADA**.
+Permanecem ressalvas que não mudam dono, autorização nem a persistência da troca. Decisão: **APROVADA COM RESSALVAS**.
 
 ## 3. Problemas bloqueantes
 
-### 3.1 Conjunto de entrada do lote geral
+Não houve achado nesta categoria.
 
-- **Classificação:** comprovado.
-- **Onde:** RF-DS-03 e a seção 10, item «Conjunto do lote geral».
-- **O que falta:** o discovery aprova distribuir em lote por rodízio, peso, carga ou território, com simulação antes de confirmar. Não diz se o lote percorre todos os leads sem dono da empresa, só uma seleção ou só o resultado dos filtros.
-- **Por que bloqueia:** duas implementações podem atribuir conjuntos diferentes e ainda assim cumprir o restante da spec. A redistribuição de carteira não sofre essa lacuna: o conjunto dela está fechado na RF-DS-08.
-- **Pergunta:** o lote geral usa todos os leads sem dono da empresa, apenas os leads escolhidos pelo admin, ou apenas os leads que passaram pelos filtros da lista?
-
-### 3.2 Atribuição manual de lead que já tem dono
-
-- **Classificação:** comprovado.
-- **Onde:** RF-DS-02, o fluxo «Atribuir seleção» e a seção 10, item «Atribuição manual de lead que já tem dono».
-- **O que falta:** o discovery aprova atribuir leads selecionados a um vendedor e aprova a redistribuição da carteira por lote. Não diz se a atribuição manual pode trocar um dono já existente.
-- **Por que bloqueia:** permitir a troca e recusá-la são comportamentos diferentes de dono e de histórico.
-- **Pergunta:** a atribuição manual pode trocar o dono de um lead `ABERTA` que já tem outro dono, ou só atribui lead sem dono?
-
-### 3.3 Confirmação do lote é regra e, ao mesmo tempo, dúvida
-
-- **Classificação:** comprovado.
-- **Onde:** RN-DS-17 e a seção 10, item «Simulação como snapshot».
-- **O que está errado:** RN-DS-17 exige que a confirmação execute a regra de novo e não use a simulação como reserva. A seção 10 diz que nenhuma decisão manda guardar a simulação e que a leitura «não bloqueia». O discovery só aprova ver a simulação antes de confirmar e gravar na confirmação. Não escolhe entre repetir a regra e aplicar o resultado mostrado.
-- **Por que bloqueia:** a spec promove uma escolha não aprovada a regra e, na seção seguinte, trata essa escolha como interpretação. O planejamento não sabe se deve implementar a RN-DS-17 ou esperar a decisão. O resultado observável muda se o conjunto ou a elegibilidade mudarem entre a simulação e a confirmação.
-- **Pergunta:** a confirmação reaplica a regra no momento em que o admin confirma, ou grava exatamente o destino mostrado na simulação?
-
-### 3.4 Regra automática `FILA` definida sem decisão
-
-- **Classificação:** comprovado.
-- **Onde:** RN-DS-16, RF-DS-07 e CA-04.
-- **O que está errado:** o discovery inclui `FILA` entre os valores de `regra_padrao` e diz que a automática de lead novo segue a regra escolhida. Não descreve o que `FILA` faz na criação. A spec exige que o lead novo permaneça sem dono e sem linha de histórico.
-- **Por que bloqueia:** outra leitura possível é a automática entregar o lead ao vendedor que pegaria o primeiro da fila. As duas mudam dono, histórico e `LeadAtribuido`. A spec escolheu uma delas sem decisão aprovada.
-- **Pergunta:** com a automática ligada e regra `FILA`, o lead novo fica sem dono até um vendedor pegá-lo, ou a feature já o atribui a um vendedor no momento da criação?
+O conjunto do lote geral está na RF-DS-03 e nas decisões posteriores. A troca manual de lead `ABERTA` que já tem dono está na RF-DS-02. A confirmação que executa a regra de novo está na RN-DS-17, e a seção 10 não a trata mais como dúvida. A automática `FILA` está na RN-DS-16 e no discovery. O prazo de parado é duração de N períodos de 24 horas na RN-DS-10.
 
 ## 4. Problemas importantes
 
-### 4.1 «Mais de N dias» não tem unidade observável
+Não houve achado nesta categoria.
 
-- **Classificação:** comprovado.
-- **Onde:** RN-DS-10 e CA-18.
-- **O que falta:** o discovery e a spec dizem «há mais de N dias», com padrão 5, contados desde a última atribuição. Não dizem se o dia é um período de 24 horas ou um dia de calendário, nem qual fuso vale no segundo caso.
-- **Por que importa:** CA-18 pode passar ou falhar conforme o relógio escolhido. Precisa ser decidido antes de planejar a marcação de parado. Não responde no lugar de quem decide.
-- **Pergunta:** N dias são N períodos de 24 horas a partir de `atribuido_em`, ou dias de calendário? Se forem dias de calendário, qual fuso?
+Nenhum ponto em aberto muda quem fica com o lead, quem pode executar a operação ou se a troca de dono permanece gravada.
 
 ## 5. Melhorias recomendadas
 
-### 5.1 Ordem do histórico
+### 5.1 Texto do e-mail
 
 - **Classificação:** comprovado.
-- **Onde:** fluxo «Histórico».
-- **O que aparece:** a spec exige linhas da mais antiga para a mais nova. O discovery aprova o admin ver o histórico e não fixa a ordem.
-- **Por que é melhoria:** não muda quem é o dono. Uma ordem estável ajuda o teste, mas não estava aprovada.
+- **Onde:** seção 3, fora de escopo, e seção 10.
+- **O que falta:** assunto e corpo não foram aprovados.
+- **Por que não bloqueia:** destinatário, momento, falha que não desfaz a troca e registro persistido da falha estão decididos. O texto não altera dono nem histórico.
 
-### 5.2 Empresa suspensa
+### 5.2 Carga de `LeadAtribuido`
 
-- **Classificação:** hipotético.
-- **Onde:** a spec não trata `company.status`.
-- **O que se observou:** `src/main/resources/db/migration/V2__criar_tabelas_empresa_e_usuarios.sql` admite `ACTIVE` e `SUSPENDED`. `ImportarLeadsUseCase` não consulta esse status. Não há evidência de que a distribuição precise bloqueá-lo.
-- **Por que não é defeito:** o risco é plausível e não está demonstrado. Não deve ser tratado como requisito faltante.
+- **Classificação:** comprovado.
+- **Onde:** seção 8, decisões técnicas propostas, e seção 10.
+- **O que falta:** os campos do evento são proposta, não requisito.
+- **Por que não bloqueia:** a obrigação de publicar a cada troca está aprovada. Não há consumidor deste evento em `src`. O plano pode adotar ou trocar a proposta sem reabrir produto.
+
+### 5.3 Intervalo da verificação de parado
+
+- **Classificação:** comprovado.
+- **Onde:** fluxo «Marcar parado» e seção 8.
+- **O que falta:** o intervalo entre verificações não está aprovado. A spec permite que um teste invoque a verificação diretamente.
+- **Por que não bloqueia:** a duração que marca o lead está decidida. O plano escolhe quando a verificação roda.
+
+### 5.4 Paginação da lista sem dono
+
+- **Classificação:** comprovado.
+- **Onde:** seção 10.
+- **O que falta:** paginação e ordem dessa lista não foram aprovadas.
+- **Por que não bloqueia:** os filtros da RF-DS-01 estão decididos. A ordenação da fila de retirada é outra regra, a RN-DS-08, e está testável.
 
 ## 6. Critérios de aceitação ausentes ou insuficientes
 
-### 6.1 Falha de e-mail sem registro observável
+### 6.1 Correspondência de cidade e UF
 
 - **Classificação:** comprovado.
-- **Onde:** CA-19, comparado com a decisão de parado no discovery e com o requisito não funcional da spec sobre a falha ficar registrada.
-- **O que falta:** CA-19 verifica que o lead continua sem dono e que a linha `PARADO` permanece. Não verifica que a falha ficou registrada. O discovery aprova exatamente esse registro.
-- **Por que é insuficiente:** uma implementação que não registra a falha passa no CA-19.
+- **Onde:** RN-DS-19, sem critério correspondente na seção 9.
+- **O que falta:** nenhum CA observa espaço nas pontas, acento, caixa da cidade ou UF gravada em maiúsculas.
+- **Por que não bloqueia:** a regra está observável. O critério pode ser acrescentado depois sem mudar a decisão de dono.
 
-### 6.2 Ordem interna da fila
-
-- **Classificação:** comprovado.
-- **Onde:** CA-15, comparado com RN-DS-08.
-- **O que falta:** CA-15 cobre quente na frente e devolvido ou parado não quente atrás. Não cobre a ordem do criado há mais tempo ao mais novo dentro de cada grupo, nem que quente devolvido permaneça no grupo quente.
-- **Por que não bloqueia sozinho:** a RN-DS-08 já descreve essa ordem de forma observável. O critério é mais estreito que a regra.
-
-### 6.3 Peso zero nas outras regras
-
-- **Classificação:** comprovado.
-- **Onde:** CA-09, comparado com RN-DS-04.
-- **O que falta:** CA-09 verifica a proporção e que peso 0 não recebe pela regra de peso. Não verifica que peso 0 ainda pode receber por outra regra ou por atribuição manual, frase que a própria RN-DS-04 afirma.
-- **Por que não bloqueia sozinho:** a regra está escrita. O critério não a cobre por inteiro.
+Os critérios CA-04, CA-06, CA-12, CA-13, CA-15, CA-18 e CA-19 cobrem os comportamentos que a avaliação anterior apontou como lacuna.
 
 ## 7. Divergências entre discovery, spec e implementação atual
 
-### 7.1 `FILA` automática
+### 7.1 Decisões posteriores
 
 - **Classificação:** comprovado.
-- **Onde:** RN-DS-16 e CA-04, contra a tabela de `distribution_settings` do discovery.
-- **Divergência:** o discovery nomeia o valor e não o efeito. A spec fixa o efeito «permanece sem dono». É o mesmo problema bloqueante 3.4.
+- **Onde:** seção «Decisões posteriores» do discovery e RF-DS-02, RF-DS-03, RN-DS-10, RN-DS-16, RN-DS-17, RN-DS-19 e RN-DS-20.
+- **Resultado:** a spec repete essas decisões. A frase antiga do discovery que deixava o lote geral e a atribuição manual indefinidos está marcada como substituída. Não há divergência restante nesses pontos.
 
-### 7.2 Simulação e confirmação
-
-- **Classificação:** comprovado.
-- **Onde:** RN-DS-17 contra a seção 10 da própria spec e contra o discovery, que só aprova simular antes de gravar.
-- **Divergência:** a spec contém uma regra e uma pendência sobre o mesmo comportamento. É o problema bloqueante 3.3.
-
-### 7.3 Ordem do histórico
-
-- **Classificação:** comprovado.
-- **Onde:** fluxo «Histórico».
-- **Divergência:** ordem ascendente não está no discovery. É a melhoria 5.1, não um bloqueio.
-
-### 7.4 Afirmações técnicas inspecionadas
+### 7.2 Afirmações técnicas inspecionadas
 
 Não houve afirmação técnica inspecionada que o código tenha desmentido.
 
-Confirmado neste repositório:
+Reconfirmado nesta avaliação:
 
-- A tabela `lead` e `Lead.java` não têm dono, situação, UF, cidade nem quente. A única chamada de `Lead.tryCreate` está em `ImportarLeadsUseCase`. O CSV em `CsvLeads` só tem `nome_contato`, `telefone`, `whatsapp` e `email`. `OrigemLead` só tem `IMPORTACAO`.
-- `ImportarLeadsUseCase` compara `PAPEL_ADMIN` com o literal `"admin"` e não lê `TenantContext.role()`. `ExcluirLeadUseCase` compara `tenant.role()` com `"admin"`. `EmissorAccessTokenJwt` coloca `papel.name()` em `groups`. `LeadResource` não declara `@RolesAllowed`.
-- `DesativarUsuarioUseCase` não referencia lead.
-- `ErroResponse` tem `path`, `mensagem`, `codigoErro` e `dataHora`. `DomainException` mapeia para HTTP 400 e `REQUISICAO_INVALIDA`. `RecursoNaoEncontradoException` mapeia para HTTP 404. `SegurancaExceptionMappers` mapeia acesso negado para HTTP 403 e `ACESSO_NEGADO`. `GlobalExceptionHandler` mapeia SQLState `23505` para HTTP 409 e `CONFLITO`.
-- `envio_email.tipo` só admite `SETUP` e `RESET` em `V4__criar_tabelas_auditoria_envio_e_login.sql`. `EnvioEmailListener` observa `EmailParaEnviar` em `TransactionPhase.AFTER_SUCCESS`. Não há tipo `LeadAtribuido` em `src`. O `pom.xml` não declara `quarkus-scheduler`. As migrações encontradas vão de `V1` a `V4`. O datasource configurado é PostgreSQL.
-- `app_user.created_at` e `app_user.email` existem em `V2__criar_tabelas_empresa_e_usuarios.sql`.
+- `DesativarUsuarioUseCase` só menciona `lead` no comentário de que não escreve nessa tabela.
+- `V2__criar_tabelas_empresa_e_usuarios.sql` não tem coluna de fuso. A RN-DS-19 usa isso para não tratar o prazo como dia de calendário.
+- As afirmações já conferidas na avaliação anterior sobre `Lead`, `ImportarLeadsUseCase`, `CsvLeads`, `OrigemLead`, papéis do JWT, `ErroResponse`, `envio_email`, `EmailParaEnviar`, ausência de `LeadAtribuido` e de `quarkus-scheduler` continuam válidas: o código da aplicação não mudou desde então.
 
-Não verificado, e a spec já registra a limitação: não há código Angular neste repositório. A URL de frontend e o CORS em `application.properties` não comprovam nem afastam impacto de tela. Isso não foi tratado como problema nem como ausência de problema.
+Não verificado, e a spec já registra a limitação: não há código Angular neste repositório. Isso não foi tratado como problema nem como ausência de problema.
 
 ## 8. Decisão final e justificativa
 
-**REPROVADA.**
+**APROVADA COM RESSALVAS.**
 
-Há quatro problemas bloqueantes: o conjunto do lote geral, a atribuição manual de lead que já tem dono, a contradição entre RN-DS-17 e a seção 10, e o efeito não aprovado da regra automática `FILA`. Qualquer um deles impede usar a spec como base de planejamento. A unidade de «N dias» é importante e também precisa de decisão antes de planejar o parado. As melhorias e os critérios estreitos não são a causa da reprovação.
+Não há problema bloqueante nem problema importante que precise ser corrigido antes do planejamento. As ressalvas são o texto do e-mail, a carga proposta de `LeadAtribuido`, o intervalo da verificação de parado, a paginação da lista e a falta de um critério para a RN-DS-19. Nenhuma delas altera dono, autorização ou a persistência da troca.
 
-As perguntas deste relatório não foram respondidas aqui. Corrigi-las é escolha de produto e, depois, atualização da spec pelo `spec-writer`.
+O planejamento ainda depende de aprovação explícita desta validação. Esta avaliação não o inicia.
