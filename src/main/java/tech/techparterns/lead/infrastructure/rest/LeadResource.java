@@ -14,8 +14,10 @@ import org.jboss.resteasy.reactive.RestForm;
 import org.jboss.resteasy.reactive.multipart.FileUpload;
 
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.annotation.security.RolesAllowed;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.DELETE;
+import jakarta.ws.rs.PATCH;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
@@ -23,6 +25,8 @@ import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
+import tech.techparterns.distribuicao.application.Contratos;
+import tech.techparterns.distribuicao.application.EditarFatosLead;
 import tech.techparterns.lead.application.command.ExcluirLeadCommand;
 import tech.techparterns.lead.application.command.ImportarLeadsCommand;
 import tech.techparterns.lead.application.dto.ImportacaoLeadDto;
@@ -38,10 +42,12 @@ public class LeadResource {
 
     private final ImportarLeadsUseCase importarLeads;
     private final ExcluirLeadUseCase excluirLead;
+    private final EditarFatosLead editarFatos;
 
-    public LeadResource(ImportarLeadsUseCase importarLeads, ExcluirLeadUseCase excluirLead) {
+    public LeadResource(ImportarLeadsUseCase importarLeads, ExcluirLeadUseCase excluirLead, EditarFatosLead editarFatos) {
         this.importarLeads = importarLeads;
         this.excluirLead = excluirLead;
+        this.editarFatos = editarFatos;
     }
 
     @POST
@@ -73,6 +79,17 @@ public class LeadResource {
     })
     public Response excluir(@PathParam("id") UUID id) {
         var resultado = excluirLead.execute(new ExcluirLeadCommand(id));
+        if (resultado.isFailure())
+            throw new DomainException(resultado.getErrors());
+        return Response.noContent().build();
+    }
+
+    @PATCH
+    @Path("/{id}")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @RolesAllowed({"ADMIN", "SELLER"})
+    public Response editar(@PathParam("id") UUID id, Contratos.Fatos fatos) {
+        var resultado = editarFatos.editar(id, fatos);
         if (resultado.isFailure())
             throw new DomainException(resultado.getErrors());
         return Response.noContent().build();

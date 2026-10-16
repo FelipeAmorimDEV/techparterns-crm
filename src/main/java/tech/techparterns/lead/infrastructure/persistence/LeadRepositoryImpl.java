@@ -23,6 +23,7 @@ public class LeadRepositoryImpl implements LeadRepository {
     }
 
     @Override
+    @Transactional
     public Optional<Lead> buscarPorId(UUID id, CompanyId companyId) {
         return em.createQuery(
                         "from LeadEntity e where e.id = :id and e.companyId = :companyId", LeadEntity.class)
@@ -34,6 +35,7 @@ public class LeadRepositoryImpl implements LeadRepository {
     }
 
     @Override
+    @Transactional
     public List<Lead> listarNaoExcluidos(CompanyId companyId) {
         return em.createQuery(
                         "from LeadEntity e where e.companyId = :companyId and e.deletedAt is null", LeadEntity.class)
