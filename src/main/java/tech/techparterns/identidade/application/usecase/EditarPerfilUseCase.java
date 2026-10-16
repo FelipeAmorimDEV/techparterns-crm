@@ -29,18 +29,18 @@ public class EditarPerfilUseCase implements UseCase<EditarPerfilCommand, PerfilD
     public Result<PerfilDto> execute(EditarPerfilCommand cmd) {
         var usuario = usuarios.buscarPorId(contexto.userId(), contexto.empresaId())
                 .orElseThrow(() -> new RecursoNaoEncontradoException(ErroIdentidade.USUARIO_NAO_ENCONTRADO.mensagem()));
-        if (cmd.email() != null && !cmd.email().isBlank()) {
+        if (cmd != null && cmd.email() != null && !cmd.email().isBlank()) {
             var novo = EmailUsuario.tryCreate(cmd.email());
             if (novo.isFailure() || !novo.getValue().equals(usuario.email()))
                 return Result.fail(ErroIdentidade.EMAIL_PROPRIO_NAO_ALTERAVEL.mensagem());
         }
         NomeUsuario nome = null;
-        if (cmd.nome() != null) {
+        if (cmd != null && cmd.nome() != null) {
             var r = NomeUsuario.tryCreate(cmd.nome());
             if (r.isFailure()) return Result.propagate(r);
             nome = r.getValue();
         }
-        var telefone = TelefoneUsuario.tryCreateOpcional(cmd.telefone());
+        var telefone = TelefoneUsuario.tryCreateOpcional(cmd == null ? null : cmd.telefone());
         if (telefone.isFailure()) return Result.propagate(telefone);
         usuario.editarContato(nome, telefone.getValue());
         usuarios.salvar(usuario);

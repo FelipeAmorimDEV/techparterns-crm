@@ -79,7 +79,10 @@ public class UsuarioResource {
             @APIResponse(responseCode = "404", description = "Usuário não encontrado.")
     })
     public UsuarioListadoDto editar(@PathParam("id") UUID id, EditarUsuarioCommand cmd) {
-        return Respostas.valor(editar.execute(new EditarUsuarioCommand(id, cmd.nome(), cmd.email(), cmd.telefone())));
+        String nome = cmd == null ? null : cmd.nome();
+        String email = cmd == null ? null : cmd.email();
+        String telefone = cmd == null ? null : cmd.telefone();
+        return Respostas.valor(editar.execute(new EditarUsuarioCommand(id, nome, email, telefone)));
     }
 
     @POST
@@ -118,7 +121,8 @@ public class UsuarioResource {
             @APIResponse(responseCode = "404", description = "Usuário não encontrado.")
     })
     public Response alterarPapel(@PathParam("id") UUID id, AlterarPapelCommand cmd) {
-        Respostas.valor(alterarPapel.execute(new AlterarPapelCommand(id, cmd.role())));
+        String role = cmd == null ? null : cmd.role();
+        Respostas.valor(alterarPapel.execute(new AlterarPapelCommand(id, role)));
         return Response.noContent().build();
     }
 
