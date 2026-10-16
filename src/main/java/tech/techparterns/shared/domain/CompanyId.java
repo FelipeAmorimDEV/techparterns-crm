@@ -2,22 +2,22 @@ package tech.techparterns.shared.domain;
 
 import tech.techparterns.shared.domain.exception.ErroDominio;
 
-public final class FazendaId {
+public final class CompanyId {
 
     private final String valor;
 
-    private FazendaId(String valor) {
+    private CompanyId(String valor) {
         this.valor = valor;
     }
 
-    public static Result<FazendaId> tryCreate(String valor) {
+    public static Result<CompanyId> tryCreate(String valor) {
         if (valor == null || valor.isBlank())
             return Result.fail(ErroDominio.FAZENDA_OBRIGATORIA.mensagem());
-        return Result.ok(new FazendaId(valor.trim()));
+        return Result.ok(new CompanyId(valor.trim()));
     }
 
-    public static FazendaId reconstituir(String valor) {
-        return new FazendaId(valor);
+    public static CompanyId reconstituir(String valor) {
+        return new CompanyId(valor);
     }
 
     public String valor() { return valor; }
