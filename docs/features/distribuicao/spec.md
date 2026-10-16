@@ -1,6 +1,8 @@
 # Especificação — Distribuição
 
-Entrada: `docs/features/distribuicao/discovery.md`, aprovado em 16 de outubro de 2026. Esta especificação não está validada.
+Entrada: `docs/features/distribuicao/discovery.md`, aprovado em 16 de outubro de 2026, com as decisões posteriores do mesmo dia. Esta especificação não está validada.
+
+Correção pedida depois da validação reprovada: o usuário mandou decidir os pontos em aberto. As escolhas estão na spec e na seção «Decisões posteriores» do discovery.
 
 As decisões aprovadas são requisito. Alternativas não escolhidas e os critérios preliminares do discovery não entram como requisito. Onde o discovery não fechou um comportamento, a pergunta fica na seção 10 e o texto não escolhe a resposta.
 
@@ -46,8 +48,8 @@ Não existem, neste repositório, funil, território, fila de distribuição, hi
 Os identificadores abaixo são os do discovery aprovado.
 
 - **RF-DS-01.** O admin vê somente leads `ABERTA`, sem dono e sem exclusão lógica, da própria empresa. Os filtros informados valem juntos: UF, cidade, quente e origem. Filtro omitido não restringe esse campo.
-- **RF-DS-02.** O admin atribui a um vendedor `ACTIVE` da mesma empresa os leads selecionados que estão sem dono, `ABERTA` e sem exclusão. Lead `GANHO`, `PERDIDO` ou excluído não muda de dono. Lead que já tem outro dono fica na seção 10.
-- **RF-DS-03.** O admin distribui um lote pela regra escolhida: rodízio, rodízio com peso, carga ou território. O conjunto de entrada desse lote geral está em aberto na seção 10. Para cada lead do conjunto, a regra e o resultado parcial estão especificados.
+- **RF-DS-02.** O admin atribui leads selecionados a um vendedor `ACTIVE` da mesma empresa. Entra lead `ABERTA` e não excluído, com ou sem dono. Lead `GANHO`, `PERDIDO` ou excluído não muda de dono. Se o vendedor escolhido já é o dono, não há troca.
+- **RF-DS-03.** O admin distribui um lote pela regra escolhida: rodízio, rodízio com peso, carga ou território. O conjunto é o dos leads sem dono, `ABERTA` e não excluídos da empresa, restrito pelos filtros informados na operação: UF, cidade, quente e origem. Filtro omitido não restringe. Sem nenhum filtro, entram todos esses leads. A seleção individual não define esse lote.
 - **RF-DS-04.** Antes de confirmar, o admin vê quantos leads cada vendedor receberia e quantos continuariam sem dono. Essa consulta não grava dono, histórico, evento nem ponteiro.
 - **RF-DS-05.** O admin configura, por vendedor da empresa, peso de 0 a 10, limite de leads abertos e participação na distribuição. Ausência de configuração equivale a peso 1, sem limite e participação ligada.
 - **RF-DS-06.** O admin configura territórios da empresa: UF obrigatória e cidade opcional. Cidade ausente cobre a UF inteira. O par UF e cidade é único na empresa. Cada território aponta para um vendedor da empresa.
@@ -76,7 +78,7 @@ Quem grava os fatos do lead:
 - **RN-DS-07.** Vendedor cujo número de leads `ABERTA` não excluídos já é igual ao limite é pulado nas regras e não pega da fila. Limite ausente não pula.
 - **RN-DS-08.** Dois vendedores não ficam donos do mesmo lead. A fila, entre leads `ABERTA`, sem dono e não excluídos, entrega nesta ordem: quentes, do criado há mais tempo ao mais novo, mesmo que tenham sido devolvidos ou tenham voltado por parado; depois os não quentes que não foram devolvidos nem voltaram por parado, do criado há mais tempo ao mais novo; por último os não quentes devolvidos ou que voltaram por parado, do criado há mais tempo ao mais novo. «Devolvido» é a última ida à fila com regra `DEVOLUCAO`. «Voltou por parado» é a última ida à fila com regra `PARADO`. Uma ida à fila por lote sem destino não entra nesses dois grupos.
 - **RN-DS-09.** Lead `GANHO` ou `PERDIDO` não muda de dono por manual, lote, automática, fila, devolução, parado ou redistribuição.
-- **RN-DS-10.** Lead `ABERTA`, não excluído e com dono, cuja última atribuição de dono foi há mais de N dias, fica marcado como parado. N vem da configuração da empresa; o padrão é 5. Com a devolução desligada, o dono permanece, não há `assignment`, não há `LeadAtribuido` e não há e-mail. Com a devolução ligada, o lead volta à fila, gera `assignment` com regra `PARADO`, publica `LeadAtribuido` e envia e-mail ao vendedor que era o dono, no e-mail cadastrado em `app_user.email`. A falha desse envio não desfaz a volta à fila nem apaga o histórico. Lead sem dono não é marcado por essa regra. Nova atribuição de dono zera a marca de parado e passa a contar o prazo desde essa atribuição.
+- **RN-DS-10.** Lead `ABERTA`, não excluído e com dono, cuja última atribuição de dono ocorreu há mais de N períodos de 24 horas, fica marcado como parado. O prazo é duração corrida desde `atribuido_em`, não dia de calendário. Exatamente N vezes 24 horas ainda não marca. N vem da configuração da empresa, é inteiro maior ou igual a 1 e o padrão é 5. `GANHO` e `PERDIDO` não são marcados. Com a devolução desligada, o dono permanece, não há `assignment`, não há `LeadAtribuido` e não há e-mail. Com a devolução ligada, o lead volta à fila, gera `assignment` com regra `PARADO`, publica `LeadAtribuido` e envia e-mail ao vendedor que era o dono, no e-mail cadastrado em `app_user.email`. A falha desse envio não desfaz a volta à fila nem apaga o histórico, e fica persistida no registro desse envio. Lead sem dono não é marcado por essa regra. Nova atribuição de dono zera a marca de parado e passa a contar o prazo desde essa atribuição.
 - **RN-DS-11.** Desativar um vendedor não muda dono. Os leads `ABERTA` dele seguem disponíveis para o admin redistribuir pela RF-DS-08.
 - **RN-DS-12.** Toda troca de dono insere uma linha de histórico e publica `LeadAtribuido`. Ausência de troca não insere linha e não publica o evento. A linha guarda lead, dono anterior, dono novo, regra, motivo, autor e instante. Autor vazio significa automático. Motivo é obrigatório só em `DEVOLUCAO`.
 
@@ -86,8 +88,10 @@ Regras derivadas das decisões, necessárias para as anteriores serem executáve
 - **RN-DS-14.** Lead excluído logicamente não entra na fila, no lote, na carga, na redistribuição nem na automática. A exclusão não gera `assignment` nem `LeadAtribuido`.
 - **RN-DS-15.** No lote e na automática, lead sem vendedor que possa receber permanece ou volta à fila. Se o dono muda para ausente, a troca é gravada com a regra da operação e dono novo vazio. Se já estava sem dono, não há linha.
 - **RN-DS-16.** A regra `FILA`, na automática, não escolhe vendedor. O lead novo permanece sem dono e sem linha de histórico.
-- **RN-DS-17.** Simulação e confirmação são operações distintas. A confirmação executa a regra de novo sobre o conjunto e só então grava. A simulação não reserva lead.
+- **RN-DS-17.** Simulação e confirmação são operações distintas. A confirmação executa a regra de novo sobre o conjunto daquele momento e só então grava. A simulação não é guardada e não reserva lead. Se a elegibilidade ou o conjunto mudarem entre as duas, o resultado gravado é o da confirmação.
 - **RN-DS-18.** Configuração, ponteiro, território, dono e histórico de uma empresa não são lidos nem gravados por outra empresa.
+- **RN-DS-19.** Cidade do lead e cidade do território casam depois de remover espaços nas pontas, sem ignorar acento nem caixa. UF casa sem distinguir caixa e é gravada em maiúsculas. Não há fuso de empresa no schema atual, por isso o prazo de parado não usa dia de calendário.
+- **RN-DS-20.** `max_leads_abertos` vazio significa sem limite. Valor gravado é inteiro maior ou igual a zero. Zero deixa o vendedor sempre no limite das regras e da fila. `dias_para_parado` menor que 1 não é gravado. O histórico de donos é entregue da linha mais antiga para a mais nova.
 
 Valores de regra no histórico: `MANUAL`, `RODIZIO`, `PESO`, `CARGA`, `TERRITORIO`, `FILA`, `DEVOLUCAO`, `PARADO`.
 
@@ -109,7 +113,7 @@ O admin consulta a fila qualificada da RF-DS-01. Vendedor que consulta recebe re
 
 ### Atribuir seleção
 
-O admin informa os leads e um vendedor `ACTIVE` da empresa. Cada lead sem dono, `ABERTA` e não excluído passa a ter esse dono, com regra `MANUAL`, autor admin e dono anterior vazio. Lead `GANHO`, `PERDIDO` ou excluído não muda de dono. O lead que já tem outro dono está na seção 10.
+O admin informa os leads e um vendedor `ACTIVE` da empresa. Cada lead `ABERTA` e não excluído passa a ter esse dono, com regra `MANUAL` e autor admin. Se não havia dono, o dono anterior fica vazio. Se havia outro dono, a linha guarda esse dono anterior. Lead que já é desse vendedor, `GANHO`, `PERDIDO` ou excluído não muda de dono. Os leads que mudam são gravados mesmo que outros do mesmo pedido não mudem.
 
 Recusa a operação inteira, sem gravar troca, quando o vendedor não existe na empresa, não é `SELLER` ou não está `ACTIVE`.
 
@@ -117,7 +121,7 @@ Recusa a operação inteira, sem gravar troca, quando o vendedor não existe na 
 
 A simulação devolve a contagem por vendedor e a contagem que continuaria sem dono. Não grava.
 
-A confirmação aplica a regra. Cada lead com destino muda de dono, gera linha com a regra escolhida e publica `LeadAtribuido`. O autor é o admin no lote manualmente confirmado e fica vazio na automática. Lead sem destino e que já estava sem dono não gera linha. Lead com dono que fica sem destino gera linha com dono novo vazio.
+O conjunto do lote geral é o da RF-DS-03. A confirmação executa a regra de novo sobre esse conjunto naquele instante. Não reaplica a contagem da simulação. Cada lead com destino muda de dono, gera linha com a regra escolhida e publica `LeadAtribuido`. O autor é o admin no lote manualmente confirmado e fica vazio na automática. Lead sem destino e que já estava sem dono não gera linha. Lead com dono que fica sem destino gera linha com dono novo vazio.
 
 ### Redistribuir carteira
 
@@ -125,7 +129,7 @@ O conjunto é o da RF-DS-08. O restante do fluxo é o lote. Desativar o vendedor
 
 ### Distribuição automática
 
-Quando a automática está ligada, cada lead novo persistido por `ImportarLeadsUseCase` no ramo de criação passa pela regra escolhida. Completar campos vazios de um lead já existente e ignorar duplicata não disparam a regra. Com a automática desligada, o lead novo fica sem dono e sem linha.
+Quando a automática está ligada, cada lead novo persistido por `ImportarLeadsUseCase` no ramo de criação passa pela regra escolhida. Com a regra `FILA`, esse lead permanece sem dono e sem linha. Completar campos vazios de um lead já existente e ignorar duplicata não disparam a regra. Com a automática desligada, o lead novo fica sem dono e sem linha.
 
 ### Pegar da fila
 
@@ -137,7 +141,7 @@ O vendedor informa o lead e o motivo. O lead `ABERTA` de que ele é dono volta �
 
 ### Marcar parado
 
-Uma verificação posterior ao prazo marca o lead da RN-DS-10. O instante em que a verificação roda não foi aprovado; a regra do que ela faz está aprovada. Com devolução ligada, o e-mail sai depois da troca gravada. Falha de envio deixa a troca como está.
+Uma verificação posterior ao prazo marca o lead da RN-DS-10. O intervalo entre verificações não está aprovado; a duração de N vezes 24 horas está. Com devolução ligada, o e-mail sai depois da troca gravada. Falha definitiva de envio deixa a troca como está e grava a falha no registro desse envio. Lead `GANHO` ou `PERDIDO` não recebe a marca.
 
 ### Editar fatos do lead
 
@@ -198,34 +202,30 @@ Cada critério abaixo é observável a partir das decisões aprovadas.
 - **CA-03.** Com automática ligada e regra de atribuição, o lead novo importado que tem destino ganha dono, uma linha e `LeadAtribuido`, com autor vazio. Completar campos de um lead existente não muda o dono.
 - **CA-04.** Com regra `FILA` e automática ligada, o lead novo permanece sem dono e sem linha.
 - **CA-05.** A lista do admin não contém lead com dono, `GANHO`, `PERDIDO` ou excluído. UF, cidade, quente e origem informados juntos restringem ao mesmo tempo.
-- **CA-06.** Atribuição manual a vendedor `ACTIVE` grava dono e linha `MANUAL` para lead sem dono e `ABERTA`. O mesmo pedido para vendedor `PENDING` ou `INACTIVE` não grava nada.
+- **CA-06.** Atribuição manual a vendedor `ACTIVE` grava dono e linha `MANUAL` para lead `ABERTA` sem dono e também para lead `ABERTA` que já tem outro dono. Nesse segundo caso, a linha guarda o dono anterior. O mesmo pedido para vendedor `PENDING` ou `INACTIVE` não grava nada. Lead `GANHO` não muda de dono.
 - **CA-07.** Vendedor no limite ou com participação desligada não recebe por rodízio, peso, carga, território nem fila, e não pega da fila. A atribuição manual ainda pode escolhê-lo se estiver `ACTIVE`.
 - **CA-08.** Três vendedores elegíveis, cadastrados em ordem A, B e C, sem limite, recebem quatro leads de rodízio na ordem A, B, C, A. A atribuição seguinte começa em B.
-- **CA-09.** Num ciclo completo de peso, com um vendedor peso 2 e outro peso 1, ambos elegíveis, o primeiro recebe 2 leads e o segundo 1. Um terceiro com peso 0 não recebe por essa regra.
+- **CA-09.** Num ciclo completo de peso, com um vendedor peso 2 e outro peso 1, ambos elegíveis, o primeiro recebe 2 leads e o segundo 1. Um terceiro com peso 0 não recebe por essa regra e ainda pode receber por rodízio simples ou por atribuição manual, se estiver `ACTIVE`.
 - **CA-10.** Por carga, o lead vai para quem tem menos leads `ABERTA`. Dois empatados resolvem pelo próximo do rodízio. Lead `GANHO` desse vendedor não entra na conta.
 - **CA-11.** Lead com cidade coberta por um vendedor elegível vai para ele, e não para o vendedor da UF inteira. Se o vendedor da cidade está inativo, fora da distribuição ou no limite, o lead vai ao rodízio e não ao vendedor da UF.
-- **CA-12.** A simulação de um lote não altera dono, histórico, ponteiro nem envia e-mail. A confirmação altera só os leads cujo dono mudou.
-- **CA-13.** Num lote em que só parte dos leads tem destino, essa parte muda de dono e o restante sem dono continua sem linha nova.
+- **CA-12.** A simulação de um lote não altera dono, histórico, ponteiro nem envia e-mail. A confirmação executa a regra de novo e altera só os leads cujo dono mudou. Se, entre a simulação e a confirmação, o único vendedor elegível passar do limite, a confirmação não grava o destino que a simulação tinha mostrado para ele.
+- **CA-13.** Num lote em que só parte dos leads tem destino, essa parte muda de dono e o restante sem dono continua sem linha nova. Com filtro de UF informado, lead sem dono de outra UF não entra nesse lote. Sem filtro, entra todo lead sem dono, `ABERTA` e não excluído da empresa.
 - **CA-14.** Redistribuir a carteira não inclui lead `GANHO`, `PERDIDO` ou excluído. Desativar o vendedor deixa os leads `ABERTA` com ele até a confirmação dessa redistribuição.
-- **CA-15.** Dois vendedores que pegam a fila ao mesmo tempo recebem leads diferentes, ou um deles recebe a informação de fila vazia. A ordem segue a RN-DS-08: quente na frente; não quente devolvido ou parado atrás de não quente que nunca voltou por esses motivos.
+- **CA-15.** Dois vendedores que pegam a fila ao mesmo tempo recebem leads diferentes, ou um deles recebe a informação de fila vazia. A ordem é a da RN-DS-08: quente mais antigo antes de quente mais novo, mesmo que o mais antigo tenha sido devolvido; não quente que nunca voltou por devolução ou parado antes de não quente mais antigo que voltou por um desses motivos; dentro de cada grupo, o criado há mais tempo vem primeiro.
 - **CA-16.** Devolução sem motivo, ou com motivo acima de 200 caracteres, não muda o dono. Devolução válida gera linha `DEVOLUCAO` e `LeadAtribuido`.
 - **CA-17.** Vendedor que não é o dono não altera situação nem quente. Vendedor não altera UF nem cidade. Admin altera os quatro. `GANHO` e `PERDIDO` não voltam a `ABERTA`, e o dono permanece.
-- **CA-18.** Lead `ABERTA` com o mesmo dono há mais de N dias fica marcado. Com a devolução desligada, o dono permanece e não há e-mail. Com a devolução ligada, o lead fica sem dono, há linha `PARADO`, há `LeadAtribuido` e o e-mail é endereçado ao `app_user.email` do dono anterior.
-- **CA-19.** Se o envio do e-mail do parado falha, o lead continua sem dono e a linha `PARADO` continua consultável.
+- **CA-18.** Com N igual a 5, lead `ABERTA` com o mesmo dono há exatamente 120 horas não fica marcado. Depois disso, fica marcado. Com a devolução desligada, o dono permanece e não há e-mail. Com a devolução ligada, o lead fica sem dono, há linha `PARADO`, há `LeadAtribuido` e o e-mail é endereçado ao `app_user.email` do dono anterior. Lead `GANHO` com dono há mais de 120 horas não fica marcado.
+- **CA-19.** Se o envio do e-mail do parado falha de forma definitiva, o lead continua sem dono, a linha `PARADO` continua consultável e existe registro persistido dessa falha de envio.
 - **CA-20.** Excluir o lead não gera linha nova e não remove as linhas já gravadas. O lead excluído não volta à fila nem à carga.
 - **CA-21.** Admin de outra empresa não lê nem grava dono, histórico, território, configuração ou fila da empresa do lead.
 - **CA-22.** Segundo território com o mesmo par UF e cidade na mesma empresa não apaga o primeiro.
 
 ## 10. Dúvidas e decisões pendentes
 
-- **Conjunto do lote geral.** O lote da RF-DS-03 percorre todos os leads sem dono da empresa, só uma seleção, ou só o resultado dos filtros? Bloqueia o contrato de entrada desse lote. Não bloqueia a regra aplicada a cada lead nem a redistribuição de carteira, cujo conjunto já é o da RF-DS-08.
-- **Atribuição manual de lead que já tem dono.** O discovery fecha a atribuição de leads selecionados sem dono e fecha a redistribuição da carteira por lote. Não fecha a troca manual de um dono já existente. Bloqueia só esse caso.
-- **Texto do e-mail e assunto.** Não foram aprovados. Não bloqueia destinatário, momento do envio nem a regra de falha.
-- **Carga de `LeadAtribuido`.** A obrigação de publicar está aprovada. Os campos do evento não. Não bloqueia a publicação. Não há consumidor deste evento no repositório, então não bloqueia um contrato já existente.
+Os bloqueios da validação de 16 de outubro de 2026 foram decididos e saíram desta seção: conjunto do lote geral, troca manual de dono, confirmação que reaplica a regra, efeito da automática `FILA` e a duração de N dias.
+
+- **Texto do e-mail e assunto.** Não foram aprovados. Não bloqueia destinatário, momento do envio, persistência da falha nem o restante do comportamento.
+- **Carga de `LeadAtribuido`.** A obrigação de publicar está aprovada. Os campos do evento não. Não bloqueia a publicação. Não há consumidor deste evento no repositório.
 - **Frontend Angular.** Não há código Angular neste repositório. O impacto de tela não foi verificado e não bloqueia o comportamento de backend desta especificação.
-- **Marcar parado em lead `GANHO` ou `PERDIDO` sem tirar o dono.** A troca de dono desses leads está proibida. A simples marca, sem troca, não foi decidida. Não bloqueia a proibição de redistribuir.
-- **Normalização de cidade e o valor inicial de `regra_padrao`.** A correspondência de território e a necessidade de uma regra escolhida ao ligar a automática estão decididas. Caixa, acento e o valor default da regra, enquanto a automática permanece desligada, não. Não bloqueiam os requisitos já escritos.
-- **Limite negativo e prazo de parado menor que 1.** Não foram decididos. Não bloqueiam o padrão de 5 dias, o limite vazio e a faixa de peso de 0 a 10.
 - **Paginação e ordenação da lista sem dono.** Não foram aprovadas. Não bloqueiam os filtros da RF-DS-01.
-- **Algoritmo interno do peso e o bloqueio físico da fila.** A proporção, o ponteiro e a exclusão de dois donos estão decididos. As propostas da seção 8 não são requisito. Não bloqueiam os critérios CA-08, CA-09 e CA-15, que observam resultado e não a estrutura interna.
-- **Simulação como snapshot.** Nenhuma decisão manda guardar a simulação. Esta especificação trata a confirmação como uma nova execução da regra. Não bloqueia a separação entre simular e confirmar.
+- **Algoritmo interno do peso e o bloqueio físico da fila.** A proporção, o ponteiro e a exclusão de dois donos estão decididos. As propostas da seção 8 não são requisito. Não bloqueiam os critérios que observam o resultado.

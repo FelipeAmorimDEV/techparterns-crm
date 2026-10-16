@@ -118,7 +118,7 @@ Tabelas de origem, já com o recorte por empresa:
 
 ## Dúvidas pendentes
 
-Nenhuma de produto.
+Nenhuma de produto na aprovação inicial. Os pontos reabertos pela validação foram decididos em «Decisões posteriores».
 
 ## Alternativas avaliadas
 
@@ -206,6 +206,20 @@ Nenhuma de produto.
 - Falha de e-mail não devolve o lead ao dono anterior nem apaga o histórico da troca.
 - Redistribuir a carteira mostra a simulação dos leads `ABERTA` daquele vendedor e só troca o dono depois da confirmação.
 
+## Decisões posteriores
+
+Em 16 de outubro de 2026, depois da validação reprovada, o usuário pediu para decidir os pontos em aberto. Estas decisões passam a valer junto com as anteriores. O que não está listado aqui permanece como na aprovação inicial.
+
+- O lote geral usa os leads sem dono, `ABERTA` e não excluídos da empresa, restritos pelos filtros informados: UF, cidade, quente e origem. Sem filtro, entram todos esses leads. A seleção individual não define esse lote.
+- A atribuição manual pode trocar o dono de um lead `ABERTA` que já tem outro dono. `GANHO`, `PERDIDO` e excluído não mudam. Se o destino já é o dono, não há troca.
+- A confirmação do lote executa a regra de novo. A simulação não fica guardada e não reserva lead.
+- Com a automática ligada e regra `FILA`, o lead novo fica sem dono até um vendedor pegá-lo. Não há linha de histórico na criação.
+- «Mais de N dias» significa mais de N períodos de 24 horas desde `atribuido_em`. Exatamente esse prazo ainda não marca parado. Não usa dia de calendário. `GANHO` e `PERDIDO` não são marcados.
+- Cidade casa depois de remover espaços nas pontas, respeitando acento e caixa. UF não distingue caixa.
+- `dias_para_parado` menor que 1 não é gravado. Limite vazio continua sem limite. Limite zero é válido e deixa o vendedor sempre no limite das regras e da fila.
+- O histórico é lido da linha mais antiga para a mais nova.
+
 ## Alterações de escopo
 
-Nenhuma.
+- **Substituído:** a frase «nenhuma dúvida de produto» da aprovação inicial, apenas para os pontos listados em «Decisões posteriores». Também deixa de valer a leitura de que a atribuição manual só cobria lead sem dono e de que o conjunto do lote geral estava indefinido.
+- **Permanece:** fronteira B mínimo, quem grava os fatos do lead, situação definitiva, território exclusivo com cidade na frente da UF, território impedido caindo no rodízio, lote parcial, lead excluído fora da distribuição, filtros da lista, e-mail do parado sem desfazer a troca, redistribuição só da carteira `ABERTA`, ordem da fila, dono único, histórico com `LeadAtribuido` só quando o dono muda, e configuração por empresa.
