@@ -13,6 +13,7 @@ import tech.techparterns.lead.application.csv.ValidadorLinhaLead;
 import tech.techparterns.lead.application.dto.ImportacaoLeadDto;
 import tech.techparterns.lead.application.dto.LinhaRejeitadaDto;
 import tech.techparterns.lead.domain.model.Lead;
+import tech.techparterns.lead.domain.port.DistribuirLeadNovo;
 import tech.techparterns.lead.domain.repository.LeadRepository;
 import tech.techparterns.lead.domain.service.DuplicidadeLeadResolver;
 import tech.techparterns.shared.domain.CompanyId;
@@ -36,17 +37,20 @@ public class ImportarLeadsUseCase implements UseCase<ImportarLeadsCommand, Impor
     private final LeadRepository repository;
     private final TenantContext tenant;
     private final Clock clock;
+    private final DistribuirLeadNovo distribuirLeadNovo;
 
-    public ImportarLeadsUseCase(LeadRepository repository, TenantContext tenant, Clock clock) {
+    public ImportarLeadsUseCase(LeadRepository repository, TenantContext tenant, Clock clock,
+                                DistribuirLeadNovo distribuirLeadNovo) {
         this.repository = repository;
         this.tenant = tenant;
         this.clock = clock;
+        this.distribuirLeadNovo = distribuirLeadNovo;
     }
 
     @Override
     @Transactional
     public Result<ImportacaoLeadDto> execute(ImportarLeadsCommand cmd) {
-        if (!PAPEL_ADMIN.equals("admin"))
+        if (tenant.role() == null || !PAPEL_ADMIN.equalsIgnoreCase(tenant.role()))
             throw new DomainException(ErroDominio.OPERACAO_RESTRITA_AO_ADMIN.mensagem());
         var empresa = CompanyId.reconstituir(tenant.requireCompanyId());
 
@@ -78,6 +82,7 @@ public class ImportarLeadsUseCase implements UseCase<ImportarLeadsCommand, Impor
                 if (criado.isFailure())
                     throw new DomainException(criado.getErrors());
                 repository.salvar(criado.getValue());
+                distribuirLeadNovo.aoCriar(criado.getValue());
                 ativos.add(criado.getValue());
                 if (encontrado.isEmpty()) criados++; else criadosMesmoAssim++;
             } else if (ACAO_IGNORAR.equals(acao)) {

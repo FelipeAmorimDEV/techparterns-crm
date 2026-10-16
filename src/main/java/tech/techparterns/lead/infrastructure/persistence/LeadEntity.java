@@ -35,6 +35,18 @@ public class LeadEntity {
     @Column(name = "origem", nullable = false)
     public String origem;
 
+    @Column(name = "situacao", nullable = false)
+    public String situacao;
+
+    @Column(name = "uf")
+    public String uf;
+
+    @Column(name = "cidade")
+    public String cidade;
+
+    @Column(name = "quente", nullable = false)
+    public boolean quente;
+
     @Column(name = "created_at", nullable = false)
     public Instant createdAt;
 

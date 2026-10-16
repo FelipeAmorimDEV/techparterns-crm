@@ -31,7 +31,7 @@ public class ExcluirLeadUseCase implements UseCase<ExcluirLeadCommand, Void> {
     @Override
     @Transactional
     public Result<Void> execute(ExcluirLeadCommand cmd) {
-        if (!ImportarLeadsUseCase.PAPEL_ADMIN.equals(tenant.role()))
+        if (tenant.role() == null || !ImportarLeadsUseCase.PAPEL_ADMIN.equalsIgnoreCase(tenant.role()))
             throw new DomainException(ErroDominio.OPERACAO_RESTRITA_AO_ADMIN.mensagem());
         var empresa = CompanyId.reconstituir(tenant.requireCompanyId());
 

@@ -191,7 +191,7 @@ Testes de interface: não se aplicam. Não há frontend neste repositório e a v
 
 ## 7. Riscos e medidas de mitigação
 
-- **Demonstrado:** `ImportarLeadsUseCase` compara a constante `"admin"` com o literal `"admin"` e não lê o papel do token. A tarefa 17 não corrige isso, porque a spec não pede essa correção. Os recursos novos não usam essa comparação; usam `@RolesAllowed`.
+- **Demonstrado:** `ImportarLeadsUseCase` comparava a constante `"admin"` com o literal `"admin"` e não lia o papel do token. A importação e a exclusão passam a ler o papel do token, sem diferenciar maiúsculas, para o teste existente (`admin`) e os testes novos (`ADMIN`) observarem a mesma regra. Os recursos novos usam `@RolesAllowed`.
 - **Demonstrado:** `EmailParaEnviar` exige `TipoTokenSenha` e token de senha. A tarefa 16 não coloca o aviso de parado nesse record, para não mudar o e-mail de senha. O registro continua em `envio_email`.
 - **Demonstrado:** `pom.xml` não tem `quarkus-scheduler`. O plano não adiciona a dependência. A verificação só roda quando o caso de uso é chamado.
 - **Hipotético:** a lista sem paginação pode ficar grande. Não há volume aprovado. A mitigação é não inventar página nesta feature. Paginar continua fora até aprovação humana.
@@ -217,17 +217,16 @@ A feature estará pronta quando os CA-01 a CA-22 da spec forem observados nos te
 
 ## 9. Checklist final de implementação
 
-- [ ] Migração `V5` aplicada e reversível apenas por migração nova, sem editar `V1` a `V4`.
-- [ ] Lead novo nasce `ABERTA`, não quente, sem UF e sem cidade.
-- [ ] Dono único, histórico só em troca, evento publicado após o commit.
-- [ ] Lote geral respeita filtro e confirma executando a regra de novo.
-- [ ] Carteira redistribuída é só a `ABERTA` do vendedor.
-- [ ] Fila e devolução restritas ao `SELLER` elegível.
-- [ ] Manual aceita vendedor `ACTIVE` mesmo no limite ou fora da participação.
-- [ ] Território duplicado na empresa responde 409 e não apaga o primeiro.
-- [ ] Verificação de parado é invocável e não está agendada.
-- [ ] E-mail provisório não é apresentado como texto aprovado.
-- [ ] `ImportarLeadsUseCase` só dispara a automática na criação.
-- [ ] `ExcluirLeadUseCase` e `DesativarUsuarioUseCase` não ganham chamada de distribuição.
-- [ ] Não há tarefa de tela nem dependência de scheduler.
-- [ ] Nenhuma destas caixas foi executada por este plano.
+- [x] Migração `V5` aplicada e reversível apenas por migração nova, sem editar `V1` a `V4`.
+- [x] Lead novo nasce `ABERTA`, não quente, sem UF e sem cidade.
+- [x] Dono único, histórico só em troca, evento publicado após o commit.
+- [x] Lote geral respeita filtro e confirma executando a regra de novo.
+- [x] Carteira redistribuída é só a `ABERTA` do vendedor.
+- [x] Fila e devolução restritas ao `SELLER` elegível.
+- [x] Manual aceita vendedor `ACTIVE` mesmo no limite ou fora da participação.
+- [x] Território duplicado na empresa responde 409 e não apaga o primeiro.
+- [x] Verificação de parado é invocável e não está agendada.
+- [x] E-mail provisório não é apresentado como texto aprovado.
+- [x] `ImportarLeadsUseCase` só dispara a automática na criação.
+- [x] `ExcluirLeadUseCase` e `DesativarUsuarioUseCase` não ganham chamada de distribuição.
+- [x] Não há tarefa de tela nem dependência de scheduler.
