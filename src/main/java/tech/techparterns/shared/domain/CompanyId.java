@@ -12,7 +12,7 @@ public final class CompanyId {
 
     public static Result<CompanyId> tryCreate(String valor) {
         if (valor == null || valor.isBlank())
-            return Result.fail(ErroDominio.FAZENDA_OBRIGATORIA.mensagem());
+            return Result.fail(ErroDominio.EMPRESA_OBRIGATORIA.mensagem());
         return Result.ok(new CompanyId(valor.trim()));
     }
 

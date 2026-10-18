@@ -1,0 +1,314 @@
+@host = http://localhost:8080
+@origin = http://localhost:4200
+
+# =====================================================================
+# Pré-requisitos (dev)
+# 1. Subir com: CRM_OWNER_EMAIL=... CRM_OWNER_NOME="..." mvn quarkus:dev
+#    (cria o dono SEM senha)
+# 2. Definir a senha do dono pelo comando de linha (nunca por HTTP):
+#    java -jar target/quarkus-app/quarkus-run.jar definir-senha-dono
+# 3. Em dev o mailer do Quarkus é simulado: o e-mail (com o token) aparece no log.
+#
+# Fluxo sugerido: dono -> criar empresa -> definir senha do admin (token)
+# -> login admin -> usuários / convites -> perfil.
+# Preencha as variáveis abaixo conforme avançar.
+# =====================================================================
+
+@ownerEmail = felipecastroo.ads@gmail.com
+@ownerSenha = SenhaDoDono@123
+@adminEmail = admin@empresa.com
+@adminSenha = SenhaAdmin@123
+@tokenSetup = NdDYBVTRkl8fPAYJt1KcyRBMJQ8LHs1RlnMykGtHzi4
+@tokenReset = COLE_O_TOKEN_DO_LINK_RESET
+@tokenConvite = COLE_O_TOKEN_DO_CONVITE
+
+###############################################################
+# AUTH
+###############################################################
+
+### Login do DONO da plataforma
+# @name loginDono
+POST {{host}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{ownerEmail}}",
+  "senha": "{{ownerSenha}}"
+}
+
+###
+@tokenDono = {{loginDono.response.body.accessToken}}
+
+### Login do ADMIN da empresa
+# @name loginAdmin
+POST {{host}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{adminEmail}}",
+  "senha": "{{adminSenha}}"
+}
+
+###
+@tokenAdmin = {{loginAdmin.response.body.accessToken}}
+
+### Renovar sessão (exige Origin permitido e cookie refresh_token)
+# O cookie é Secure; se o cliente não reenviar em http, copie o valor do
+# Set-Cookie do login e informe abaixo.
+POST {{host}}/auth/sessao/renovar
+Origin: {{origin}}
+Cookie: refresh_token=COLE_O_REFRESH_DO_SET_COOKIE
+
+### Logout (idempotente)
+POST {{host}}/auth/sessao/logout
+Origin: {{origin}}
+Cookie: refresh_token=COLE_O_REFRESH_DO_SET_COOKIE
+
+### Logout com Origin inválido (esperado 403)
+POST {{host}}/auth/sessao/logout
+Origin: http://site-malicioso.com
+
+### Recuperar senha (sempre 202, exista ou não a conta)
+POST {{host}}/auth/senha/recuperar
+Content-Type: application/json
+
+{
+  "email": "{{adminEmail}}"
+}
+
+### Definir senha por token (SETUP ou RESET) -> 204
+POST {{host}}/auth/senha/definir
+Content-Type: application/json
+
+{
+  "token": "{{tokenSetup}}",
+  "senha": "{{adminSenha}}"
+}
+
+### Definir senha com senha curta (esperado 400)
+POST {{host}}/auth/senha/definir
+Content-Type: application/json
+
+{
+  "token": "{{tokenSetup}}",
+  "senha": "123"
+}
+
+### Login inválido (esperado 401)
+POST {{host}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{adminEmail}}",
+  "senha": "senha-errada"
+}
+
+###############################################################
+# PLATAFORMA / EMPRESAS (PLATFORM_OWNER)
+###############################################################
+
+### Criar empresa com primeiro admin (envia e-mail SETUP)
+# @name criarEmpresa
+POST {{host}}/plataforma/empresas
+Authorization: Bearer {{tokenDono}}
+Content-Type: application/json
+
+{
+  "nome": "Empresa Exemplo",
+  "adminNome": "Admin Exemplo",
+  "adminEmail": "{{adminEmail}}",
+  "adminTelefone": "+5511999999999"
+}
+
+###
+@empresaId = {{criarEmpresa.response.body.id}}
+
+### Listar empresas
+GET {{host}}/plataforma/empresas
+Authorization: Bearer {{tokenDono}}
+
+### Editar nome da empresa
+PATCH {{host}}/plataforma/empresas/{{empresaId}}
+Authorization: Bearer {{tokenDono}}
+Content-Type: application/json
+
+{
+  "nome": "Empresa Exemplo Ltda"
+}
+
+### Suspender empresa
+POST {{host}}/plataforma/empresas/{{empresaId}}/suspender
+Authorization: Bearer {{tokenDono}}
+Content-Type: application/json
+
+{
+  "motivo": "Inadimplência"
+}
+
+### Reativar empresa
+POST {{host}}/plataforma/empresas/{{empresaId}}/reativar
+Authorization: Bearer {{tokenDono}}
+
+### Reenviar definição de senha do admin
+POST {{host}}/plataforma/empresas/{{empresaId}}/reenviar-definicao-senha-admin
+Authorization: Bearer {{tokenDono}}
+Content-Type: application/json
+
+{
+  "usuarioId": null
+}
+
+### Recuperar empresa sem admin ativo
+POST {{host}}/plataforma/empresas/{{empresaId}}/recuperar
+Authorization: Bearer {{tokenDono}}
+Content-Type: application/json
+
+{
+  "adminNome": "Novo Admin",
+  "adminEmail": "novo-admin@empresa.com",
+  "adminTelefone": "+5511988888888"
+}
+
+### Admin tentando acessar rota da plataforma (esperado 403)
+GET {{host}}/plataforma/empresas
+Authorization: Bearer {{tokenAdmin}}
+
+###############################################################
+# USUÁRIOS (ADMIN da empresa)
+###############################################################
+
+### Cadastrar usuário (role: ADMIN | SELLER; padrão SELLER)
+# Resposta neutra 202 (só mensagem) — o id vem da listagem abaixo.
+# @name cadastrarUsuario
+POST {{host}}/usuarios
+Authorization: Bearer {{tokenAdmin}}
+Content-Type: application/json
+
+{
+  "nome": "Vendedor Exemplo",
+  "email": "vendedor@empresa.com",
+  "telefone": "+5511977777777",
+  "role": "SELLER"
+}
+
+### Listar usuários (filtros: page, size, status, role)
+# @name listarUsuarios
+GET {{host}}/usuarios?page=0&size=20&status=PENDING&role=SELLER
+Authorization: Bearer {{tokenAdmin}}
+
+###
+@usuarioId = {{listarUsuarios.response.body.itens.0.id}}
+
+### Listar todos
+GET {{host}}/usuarios
+Authorization: Bearer {{tokenAdmin}}
+
+### Editar usuário
+PATCH {{host}}/usuarios/{{usuarioId}}
+Authorization: Bearer {{tokenAdmin}}
+Content-Type: application/json
+
+{
+  "nome": "Vendedor Editado",
+  "telefone": "+5511966666666"
+}
+
+### Alterar papel
+PUT {{host}}/usuarios/{{usuarioId}}/papel
+Authorization: Bearer {{tokenAdmin}}
+Content-Type: application/json
+
+{
+  "role": "ADMIN"
+}
+
+### Desativar usuário
+POST {{host}}/usuarios/{{usuarioId}}/desativar
+Authorization: Bearer {{tokenAdmin}}
+
+### Reativar usuário
+POST {{host}}/usuarios/{{usuarioId}}/reativar
+Authorization: Bearer {{tokenAdmin}}
+
+### Reenviar definição de senha
+POST {{host}}/usuarios/{{usuarioId}}/reenviar-definicao-senha
+Authorization: Bearer {{tokenAdmin}}
+
+###############################################################
+# CONVITES
+###############################################################
+
+### Criar convite (link completo só aparece nesta resposta)
+# @name criarConvite
+POST {{host}}/convites
+Authorization: Bearer {{tokenAdmin}}
+Content-Type: application/json
+
+{
+  "email": "convidado@empresa.com",
+  "maxUsos": 1
+}
+
+###
+@conviteId = {{criarConvite.response.body.id}}
+
+### Criar convite aberto (sem e-mail, 5 usos)
+POST {{host}}/convites
+Authorization: Bearer {{tokenAdmin}}
+Content-Type: application/json
+
+{
+  "maxUsos": 5,
+  "expiraEm": "2026-12-31T23:59:59Z"
+}
+
+### Listar convites
+GET {{host}}/convites
+Authorization: Bearer {{tokenAdmin}}
+
+### Revogar convite
+POST {{host}}/convites/{{conviteId}}/revogar
+Authorization: Bearer {{tokenAdmin}}
+
+### Aceitar convite (público)
+POST {{host}}/convites/aceitar
+Content-Type: application/json
+
+{
+  "token": "{{tokenConvite}}",
+  "email": "convidado@empresa.com",
+  "nome": "Convidado Exemplo",
+  "telefone": "+5511955555555",
+  "senha": "SenhaConvidado@123"
+}
+
+###############################################################
+# PERFIL (/me) - ADMIN ou SELLER
+###############################################################
+
+### Consultar meu perfil
+GET {{host}}/me
+Authorization: Bearer {{tokenAdmin}}
+
+### Editar meu perfil (e-mail não pode mudar)
+PATCH {{host}}/me
+Authorization: Bearer {{tokenAdmin}}
+Content-Type: application/json
+
+{
+  "nome": "Admin Exemplo Editado",
+  "telefone": "+5511944444444"
+}
+
+### Trocar minha senha
+PUT {{host}}/me/senha
+Authorization: Bearer {{tokenAdmin}}
+Content-Type: application/json
+
+{
+  "senhaAtual": "{{adminSenha}}",
+  "novaSenha": "NovaSenhaAdmin@123"
+}
+
+### Sem token (esperado 401)
+GET {{host}}/me
