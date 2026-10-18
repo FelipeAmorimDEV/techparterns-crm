@@ -18,10 +18,15 @@ public class Lead extends Entity {
     private final TelefoneBrasil whatsapp;
     private final EmailContato email;
     private final OrigemLead origem;
+    private final SituacaoLead situacao;
+    private final String uf;
+    private final String cidade;
+    private final boolean quente;
 
     private Lead(UUID id, Instant createdAt, Instant updatedAt, OffsetDateTime deletedAt,
                  CompanyId companyId, NomeContato nome, TelefoneBrasil telefone,
-                 TelefoneBrasil whatsapp, EmailContato email, OrigemLead origem) {
+                 TelefoneBrasil whatsapp, EmailContato email, OrigemLead origem,
+                 SituacaoLead situacao, String uf, String cidade, boolean quente) {
         super(id, createdAt, updatedAt, deletedAt);
         this.companyId = companyId;
         this.nome = nome;
@@ -29,6 +34,10 @@ public class Lead extends Entity {
         this.whatsapp = whatsapp;
         this.email = email;
         this.origem = origem;
+        this.situacao = situacao;
+        this.uf = uf;
+        this.cidade = cidade;
+        this.quente = quente;
     }
 
     /** Telefone, WhatsApp e e-mail são opcionais (null = ausente), mas ao menos um é exigido. */
@@ -42,13 +51,23 @@ public class Lead extends Entity {
             return Result.fail(SEM_MEIO);
         var agora = Instant.now();
         return Result.ok(new Lead(UUID.randomUUID(), agora, agora, null,
-                companyId, nome, telefone, whatsapp, email, OrigemLead.IMPORTACAO));
+                companyId, nome, telefone, whatsapp, email, OrigemLead.IMPORTACAO,
+                SituacaoLead.ABERTA, null, null, false));
     }
 
     public static Lead reconstituir(UUID id, Instant createdAt, Instant updatedAt, OffsetDateTime deletedAt,
                                     CompanyId companyId, NomeContato nome, TelefoneBrasil telefone,
                                     TelefoneBrasil whatsapp, EmailContato email, OrigemLead origem) {
-        return new Lead(id, createdAt, updatedAt, deletedAt, companyId, nome, telefone, whatsapp, email, origem);
+        return reconstituir(id, createdAt, updatedAt, deletedAt, companyId, nome, telefone, whatsapp, email, origem,
+                SituacaoLead.ABERTA, null, null, false);
+    }
+
+    public static Lead reconstituir(UUID id, Instant createdAt, Instant updatedAt, OffsetDateTime deletedAt,
+                                    CompanyId companyId, NomeContato nome, TelefoneBrasil telefone,
+                                    TelefoneBrasil whatsapp, EmailContato email, OrigemLead origem,
+                                    SituacaoLead situacao, String uf, String cidade, boolean quente) {
+        return new Lead(id, createdAt, updatedAt, deletedAt, companyId, nome, telefone, whatsapp, email, origem,
+                situacao, uf, cidade, quente);
     }
 
     /**
@@ -66,7 +85,20 @@ public class Lead extends Entity {
                 preencheTelefone ? novoTelefone : telefone,
                 preencheWhatsapp ? novoWhatsapp : whatsapp,
                 preencheEmail ? novoEmail : email,
-                origem);
+                origem, situacao, uf, cidade, quente);
+    }
+
+    /**
+     * Situação final não muda. UF e cidade já vêm normalizadas pelo caso de uso.
+     */
+    public Result<Lead> comFatos(SituacaoLead novaSituacao, boolean novoQuente, String novaUf, String novaCidade,
+                                 Instant agora) {
+        if (situacao != SituacaoLead.ABERTA)
+            return Result.fail("Situação final não muda");
+        if (novaSituacao == null)
+            return Result.fail("Situação inválida");
+        return Result.ok(new Lead(getId(), getCreatedAt(), agora, getDeletedAt(), companyId, nome,
+                telefone, whatsapp, email, origem, novaSituacao, novaUf, novaCidade, novoQuente));
     }
 
     /** Idempotente: lead já excluído permanece como está. */
@@ -82,4 +114,8 @@ public class Lead extends Entity {
     public TelefoneBrasil whatsapp() { return whatsapp; }
     public EmailContato email() { return email; }
     public OrigemLead origem() { return origem; }
+    public SituacaoLead situacao() { return situacao; }
+    public String uf() { return uf; }
+    public String cidade() { return cidade; }
+    public boolean quente() { return quente; }
 }
