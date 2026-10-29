@@ -77,7 +77,7 @@
 
 ## Git
 
-Worktree principal: `/home/felipeamorim/Desktop/techparterns-crm`, branch `develop`.
+Worktree principal: `/home/felipeamorim/Desktop/techparterns-crm`, branch `feat/funil-de-vendas-eaf0`.
 
 Outra worktree já existente: `.worktrees/distribuicao-entidades`, branch `feat/distribuicao-entidades`. Não foi modificada nesta configuração.
 
