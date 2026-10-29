@@ -14,6 +14,7 @@ import tech.techparterns.lead.application.dto.ImportacaoLeadDto;
 import tech.techparterns.lead.application.dto.LinhaRejeitadaDto;
 import tech.techparterns.lead.domain.model.Lead;
 import tech.techparterns.lead.domain.port.DistribuirLeadNovo;
+import tech.techparterns.lead.domain.port.EntrarLeadNoFunil;
 import tech.techparterns.lead.domain.repository.LeadRepository;
 import tech.techparterns.lead.domain.service.DuplicidadeLeadResolver;
 import tech.techparterns.shared.domain.CompanyId;
@@ -38,13 +39,15 @@ public class ImportarLeadsUseCase implements UseCase<ImportarLeadsCommand, Impor
     private final TenantContext tenant;
     private final Clock clock;
     private final DistribuirLeadNovo distribuirLeadNovo;
+    private final EntrarLeadNoFunil entrarLeadNoFunil;
 
     public ImportarLeadsUseCase(LeadRepository repository, TenantContext tenant, Clock clock,
-                                DistribuirLeadNovo distribuirLeadNovo) {
+                                DistribuirLeadNovo distribuirLeadNovo, EntrarLeadNoFunil entrarLeadNoFunil) {
         this.repository = repository;
         this.tenant = tenant;
         this.clock = clock;
         this.distribuirLeadNovo = distribuirLeadNovo;
+        this.entrarLeadNoFunil = entrarLeadNoFunil;
     }
 
     @Override
@@ -83,6 +86,7 @@ public class ImportarLeadsUseCase implements UseCase<ImportarLeadsCommand, Impor
                     throw new DomainException(criado.getErrors());
                 repository.salvar(criado.getValue());
                 distribuirLeadNovo.aoCriar(criado.getValue());
+                entrarLeadNoFunil.entrar(criado.getValue());
                 ativos.add(criado.getValue());
                 if (encontrado.isEmpty()) criados++; else criadosMesmoAssim++;
             } else if (ACAO_IGNORAR.equals(acao)) {
