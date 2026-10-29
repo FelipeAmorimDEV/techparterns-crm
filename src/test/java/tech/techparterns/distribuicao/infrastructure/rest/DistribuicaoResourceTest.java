@@ -30,8 +30,12 @@ import tech.techparterns.distribuicao.CapturaLeadAtribuido;
 import tech.techparterns.distribuicao.application.TrocarDono;
 import tech.techparterns.distribuicao.domain.model.DonoLead;
 import tech.techparterns.distribuicao.domain.model.RegraAtribuicao;
+import tech.techparterns.distribuicao.domain.model.ValidacaoDistribuicao;
 import tech.techparterns.distribuicao.domain.port.FatosLead;
 import tech.techparterns.distribuicao.domain.repository.DistribuicaoRepository;
+import tech.techparterns.funil.application.usecase.MarcarGanhoUseCase;
+import tech.techparterns.funil.application.usecase.MarcarPerdidoUseCase;
+import tech.techparterns.funil.domain.model.TextoPlano;
 import tech.techparterns.identidade.infrastructure.persistence.EmpresaEntity;
 import tech.techparterns.identidade.infrastructure.persistence.UsuarioEmpresaEntity;
 import tech.techparterns.lead.domain.model.*;
@@ -408,7 +412,10 @@ class DistribuicaoResourceTest {
 
     @Test
     @TestSecurity(user = "17171717-1717-4171-8171-171717171701", roles = "ADMIN")
-    @JwtSecurity(claims = @Claim(key = "companyId", value = "17171717-1717-4171-8171-171717171710"))
+    @JwtSecurity(claims = {
+            @Claim(key = "sub", value = "17171717-1717-4171-8171-171717171701"),
+            @Claim(key = "companyId", value = "17171717-1717-4171-8171-171717171710")
+    })
     void adminEditaFatosEFinalNaoVolta() {
         var empresa = UUID.fromString("17171717-1717-4171-8171-171717171710");
         var admin = UUID.fromString("17171717-1717-4171-8171-171717171701");
@@ -417,26 +424,43 @@ class DistribuicaoResourceTest {
         var lead = semearLead(empresa.toString(), "L", Instant.parse("2026-09-01T00:00:00Z"), SituacaoLead.ABERTA, null, null, false);
         given().contentType(ContentType.JSON)
                 .body("{\"situacao\":\"ABERTA\",\"quente\":true,\"uf\":\"S\",\"cidade\":\"São Paulo\"}")
-                .when().patch("/leads/" + lead.getId()).then().statusCode(400);
-        assertNull(leads.buscarPorId(lead.getId(), CompanyId.reconstituir(empresa.toString())).orElseThrow().uf());
+                .when().patch("/leads/" + lead.getId()).then().statusCode(400)
+                .body("mensagem", is(ValidacaoDistribuicao.UF_INVALIDA));
+        var aberto = leads.buscarPorId(lead.getId(), CompanyId.reconstituir(empresa.toString())).orElseThrow();
+        assertEquals(SituacaoLead.ABERTA, aberto.situacao());
+        assertFalse(aberto.quente());
+        assertNull(aberto.uf());
+        assertNull(aberto.cidade());
         given().contentType(ContentType.JSON)
                 .body("{\"situacao\":\"GANHO\",\"quente\":true,\"uf\":\"sp\",\"cidade\":\"São Paulo\"}")
-                .when().patch("/leads/" + lead.getId()).then().statusCode(204);
+                .when().patch("/leads/" + lead.getId()).then().statusCode(400)
+                .body("mensagem", is(TextoPlano.VAZIO + "; " + MarcarGanhoUseCase.VALOR_FECHADO_NAO_POSITIVO));
         fresco();
-        var gravado = leads.buscarPorId(lead.getId(), CompanyId.reconstituir(empresa.toString())).orElseThrow();
-        assertEquals(SituacaoLead.GANHO, gravado.situacao());
-        assertEquals("SP", gravado.uf());
-        assertEquals("São Paulo", gravado.cidade());
-        assertTrue(gravado.quente());
+        var semPlano = leads.buscarPorId(lead.getId(), CompanyId.reconstituir(empresa.toString())).orElseThrow();
+        assertEquals(SituacaoLead.ABERTA, semPlano.situacao());
+        assertFalse(semPlano.quente());
+        assertNull(semPlano.uf());
+        assertNull(semPlano.cidade());
+        var fechado = semearLead(empresa.toString(), "Fechado", Instant.parse("2026-09-01T01:00:00Z"),
+                SituacaoLead.GANHO, "SP", "São Paulo", true);
         given().contentType(ContentType.JSON)
                 .body("{\"situacao\":\"ABERTA\",\"quente\":false,\"uf\":null,\"cidade\":null}")
-                .when().patch("/leads/" + lead.getId()).then().statusCode(400);
-        assertEquals(SituacaoLead.GANHO, leads.buscarPorId(lead.getId(), CompanyId.reconstituir(empresa.toString())).orElseThrow().situacao());
+                .when().patch("/leads/" + fechado.getId()).then().statusCode(400)
+                .body("mensagem", is("Situação final não muda"));
+        fresco();
+        var ainda = leads.buscarPorId(fechado.getId(), CompanyId.reconstituir(empresa.toString())).orElseThrow();
+        assertEquals(SituacaoLead.GANHO, ainda.situacao());
+        assertEquals("SP", ainda.uf());
+        assertEquals("São Paulo", ainda.cidade());
+        assertTrue(ainda.quente());
     }
 
     @Test
     @TestSecurity(user = "17171717-1717-4171-8171-171717171702", roles = "SELLER")
-    @JwtSecurity(claims = @Claim(key = "companyId", value = "17171717-1717-4171-8171-171717171710"))
+    @JwtSecurity(claims = {
+            @Claim(key = "sub", value = "17171717-1717-4171-8171-171717171702"),
+            @Claim(key = "companyId", value = "17171717-1717-4171-8171-171717171710")
+    })
     void vendedorDonoNaoAlteraUf() {
         var empresa = "17171717-1717-4171-8171-171717171710";
         var dono = UUID.fromString("17171717-1717-4171-8171-171717171702");
@@ -449,17 +473,34 @@ class DistribuicaoResourceTest {
         trocar.trocar(empresa, meu.getId(), dono, RegraAtribuicao.MANUAL, null, null);
         trocar.trocar(empresa, dele.getId(), outro, RegraAtribuicao.MANUAL, null, null);
         given().contentType(ContentType.JSON)
-                .body("{\"situacao\":\"PERDIDO\",\"quente\":true,\"uf\":\"MG\",\"cidade\":\"BH\"}")
+                .body("{\"situacao\":\"ABERTA\",\"quente\":true,\"uf\":\"MG\",\"cidade\":\"BH\"}")
                 .when().patch("/leads/" + meu.getId()).then().statusCode(204);
-        var gravado = leads.buscarPorId(meu.getId(), CompanyId.reconstituir(empresa)).orElseThrow();
-        assertEquals(SituacaoLead.PERDIDO, gravado.situacao());
-        assertEquals("SP", gravado.uf());
-        assertEquals("Campinas", gravado.cidade());
-        assertTrue(gravado.quente());
+        fresco();
+        var aberto = leads.buscarPorId(meu.getId(), CompanyId.reconstituir(empresa)).orElseThrow();
+        assertEquals(SituacaoLead.ABERTA, aberto.situacao());
+        assertEquals("SP", aberto.uf());
+        assertEquals("Campinas", aberto.cidade());
+        assertTrue(aberto.quente());
         given().contentType(ContentType.JSON)
-                .body("{\"situacao\":\"GANHO\",\"quente\":true,\"uf\":\"RJ\",\"cidade\":null}")
-                .when().patch("/leads/" + dele.getId()).then().statusCode(400);
-        assertEquals(SituacaoLead.ABERTA, leads.buscarPorId(dele.getId(), CompanyId.reconstituir(empresa)).orElseThrow().situacao());
+                .body("{\"situacao\":\"PERDIDO\",\"quente\":false,\"uf\":\"RJ\",\"cidade\":\"BH\"}")
+                .when().patch("/leads/" + meu.getId()).then().statusCode(400)
+                .body("mensagem", is(MarcarPerdidoUseCase.MOTIVO_INVALIDO));
+        fresco();
+        var semMotivo = leads.buscarPorId(meu.getId(), CompanyId.reconstituir(empresa)).orElseThrow();
+        assertEquals(SituacaoLead.ABERTA, semMotivo.situacao());
+        assertEquals("SP", semMotivo.uf());
+        assertEquals("Campinas", semMotivo.cidade());
+        assertTrue(semMotivo.quente());
+        given().contentType(ContentType.JSON)
+                .body("{\"situacao\":\"GANHO\",\"quente\":true,\"uf\":\"MG\",\"cidade\":\"BH\"}")
+                .when().patch("/leads/" + dele.getId()).then().statusCode(400)
+                .body("mensagem", is(ValidacaoDistribuicao.NAO_E_DONO));
+        fresco();
+        var alheio = leads.buscarPorId(dele.getId(), CompanyId.reconstituir(empresa)).orElseThrow();
+        assertEquals(SituacaoLead.ABERTA, alheio.situacao());
+        assertEquals("RJ", alheio.uf());
+        assertNull(alheio.cidade());
+        assertFalse(alheio.quente());
     }
 
     @Test

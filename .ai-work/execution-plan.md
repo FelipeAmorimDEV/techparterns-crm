@@ -1,6 +1,6 @@
 # Plano de execução
 
-Atualizado em 2026-10-29. O plano `docs/features/funil-de-vendas/plan.md` (aprovado em 28/10/2026) entrou como doze tarefas. As tarefas 1 a 10 estão `DONE`. A tarefa 11 está `READY`. A tarefa 12 também está `READY` (depende das tarefas 5, 7 e 10). A próxima da ordem do plano é a 11.
+Atualizado em 2026-10-29. O plano `docs/features/funil-de-vendas/plan.md` (aprovado em 28/10/2026) entrou como doze tarefas. As tarefas 1 a 12 estão `DONE`. O plano do funil fechou o ciclo desta execução.
 
 A worktree `.worktrees/distribuicao-entidades` (branch `feat/distribuicao-entidades`) não é alterada. Nenhuma tarefa do funil disputa arquivo com ela: a tarefa 1 só cria arquivos novos em `tech.techparterns.funil.domain`.
 
@@ -264,7 +264,7 @@ O plano deixa de fora, e nenhuma tarefa implementa:
 | Arquivos | `AtualizarFatosLead`, `AtualizarFatosLeadImpl`, `MarcarGanhoUseCase`, `MarcarPerdidoUseCase` e as rotas de ganho e perdido. Fora da lista, com motivo: `NegocioFunil.comGanho` e `comPerdido`. Sem editar consultas de carga, fila, rodízio e redistribuição |
 | Agente | `implementer`, `test-engineer`, `code-reviewer`, `security-reviewer` |
 | Critérios | Os da tarefa 10. Quality gate passou |
-| Testes | `./mvnw -q compile` exit 0. `./mvnw test` com `TESTCONTAINERS_RYUK_DISABLED=true` e o socket do Docker Desktop. Exit 0: 275 testes, 0 falhas, 0 erros, 0 ignorados. `MarcarFinalUseCaseTest`: 10. Sem `verify -DskipITs=false` |
+| Testes | `./mvnw -q compile` exit 0. `./mvnw test` exit 0: 275 testes, 0 falhas, 0 erros, 0 ignorados. `MarcarFinalUseCaseTest`: 10. Sem `TESTCONTAINERS_RYUK_DISABLED`. Sem `verify -DskipITs=false` |
 | Estado | `DONE` |
 
 ## T-FV-11
@@ -277,11 +277,11 @@ O plano deixa de fora, e nenhuma tarefa implementa:
 | Skills | `use-case`, `dto` |
 | Módulos | Módulo único |
 | Dependências | T-FV-10 |
-| Arquivos | `Contratos.Fatos`, `EditarFatosLead`, `LeadResource` só se o JSON precisar dos campos, `FecharLeadNoFunil` e a implementação |
+| Arquivos | `Contratos.Fatos`, `EditarFatosLead`, `FecharLeadNoFunil`, `FecharLeadNoFunilImpl`. `LeadResource` sem edição: o JSON já desserializa o record. Fora da lista, com motivo: método novo em `AtualizarFatosLead` e `AtualizarFatosLeadImpl` que grava situação, quente, UF e cidade numa só `comFatos`. O método só de situação, das rotas da tarefa 10, permanece |
 | Agente | `implementer`, `test-engineer`, `code-reviewer`, `security-reviewer` |
-| Critérios | Os da tarefa 11 |
-| Testes | `./mvnw test` |
-| Estado | `READY` |
+| Critérios | Os da tarefa 11. Quality gate passou depois de um ciclo de correção: lead excluído não conclui ganho nem perdido |
+| Testes | `./mvnw -q compile` exit 0. `./mvnw -q test` exit 0: 287 testes, 0 falhas, 0 erros, 0 ignorados. `EditarFatosFunilTest`: 12. Sem `TESTCONTAINERS_RYUK_DISABLED`. Sem `verify -DskipITs=false` |
+| Estado | `DONE` |
 
 ## T-FV-12
 
@@ -293,8 +293,8 @@ O plano deixa de fora, e nenhuma tarefa implementa:
 | Skills | `query-cqrs`, `dto`, `resource` |
 | Módulos | Módulo único |
 | Dependências | T-FV-05, T-FV-07 e T-FV-10 |
-| Arquivos | `QuadroFunilQuery` (só `uf` e `quente`), caso de uso, DTO e `GET /funil/quadro` |
+| Arquivos | `QuadroFunilQuery` (só `uf` e `quente`), caso de uso, DTO e `GET /funil/quadro`. Fora da lista, com motivo: `NegocioFunilRepository.listarPorEmpresa` |
 | Agente | `implementer`, `test-engineer`, `code-reviewer`, `security-reviewer` |
-| Critérios | Os da tarefa 12 |
-| Testes | `./mvnw test` |
-| Estado | `READY` |
+| Critérios | Os da tarefa 12. Quality gate passou |
+| Testes | `./mvnw test` com `TESTCONTAINERS_RYUK_DISABLED=true` e o socket do Docker Desktop. Exit 0: 298 testes, 0 falhas, 0 erros, 0 ignorados. `QuadroFunilUseCaseTest`: 11. `EditarFatosFunilTest`: 12. Sem `verify -DskipITs=false` |
+| Estado | `DONE` |

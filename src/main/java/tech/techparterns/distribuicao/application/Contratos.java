@@ -1,5 +1,6 @@
 package tech.techparterns.distribuicao.application;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
 
@@ -15,7 +16,8 @@ public final class Contratos {
 
     public record Devolucao(UUID leadId, String motivo) {}
 
-    public record Fatos(String situacao, boolean quente, String uf, String cidade) {}
+    public record Fatos(String situacao, boolean quente, String uf, String cidade,
+                        String planoFechado, BigDecimal valorFechado, UUID motivoPerdaId, String observacao) {}
 
     public record Configuracao(boolean automatica, String regraPadrao, int diasParaParado, boolean devolverParadoAFila) {}
 

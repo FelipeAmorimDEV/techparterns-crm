@@ -12,4 +12,11 @@ import tech.techparterns.shared.domain.Result;
 public interface AtualizarFatosLead {
 
     Result<Void> atualizar(CompanyId companyId, UUID leadId, String situacao);
+
+    /**
+     * Grava situação, quente, UF e cidade na mesma chamada de fatos do lead.
+     * Não altera o dono. Se a mudança falhar, nada é salvo.
+     */
+    Result<Void> atualizar(CompanyId companyId, UUID leadId, String situacao,
+                           boolean quente, String uf, String cidade);
 }
