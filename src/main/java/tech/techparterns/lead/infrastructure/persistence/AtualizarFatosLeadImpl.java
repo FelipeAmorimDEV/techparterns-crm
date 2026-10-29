@@ -36,4 +36,16 @@ public class AtualizarFatosLeadImpl implements AtualizarFatosLead {
         leads.salvar(novo.getValue());
         return Result.ok();
     }
+
+    @Override
+    public Result<Void> atualizar(CompanyId companyId, UUID leadId, String situacao,
+                                  boolean quente, String uf, String cidade) {
+        var lead = leads.buscarPorId(leadId, companyId)
+                .orElseThrow(() -> new DomainException(LEAD_NAO_ENCONTRADO));
+        var novo = lead.comFatos(SituacaoLead.valueOf(situacao), quente, uf, cidade, clock.instant());
+        if (novo.isFailure())
+            return Result.propagate(novo);
+        leads.salvar(novo.getValue());
+        return Result.ok();
+    }
 }

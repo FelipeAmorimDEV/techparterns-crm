@@ -3,10 +3,11 @@
 ## Checkpoint
 
 - Data: 2026-10-29
-- Sessão: tarefa 10 do Funil de Vendas, no branch `feat/funil-de-vendas-eaf0`
-- Última tarefa concluída: `T-FV-10` (`DONE`). Quality gate passou. Revisão de código **APROVADA**. Revisão de segurança **SEM BLOQUEIO**
-- Tarefa atual: nenhuma em andamento
-- Próximo passo: `T-FV-11` está `READY`. `T-FV-12` também está `READY` e não disputa arquivo com a 11
+- Sessão: tarefas 11 e 12 do Funil de Vendas, no branch `feat/funil-de-vendas-eaf0`
+- Última tarefa concluída: `T-FV-12` (`DONE`). Quality gate passou. Revisão de código **APROVADA**. Revisão de segurança **SEM BLOQUEIO**
+- Tarefa atual: nenhuma em andamento. As doze tarefas do plano do funil estão `DONE`
+- Próximo passo: nenhum do plano do funil. As tarefas `T-SPEC-*` seguem bloqueadas por B-AGENT
+- Conferência antes de editar: o código de produção das tarefas 1 a 10 estava no disco, inclusive `AtualizarFatosLead`, `AtualizarFatosLeadImpl`, `MarcarGanhoUseCase`, `MarcarPerdidoUseCase` e `NegocioFunilResource`. `dev-keys` não foi lido nem recriado
 - Worktree `.worktrees/distribuicao-entidades` não foi modificada
 
 ### T-FV-01
@@ -68,11 +69,29 @@
 
 ### T-FV-10
 
-- Implementação: subagente `implementer` (id `bc-bf745869-018c-585f-9ffb-79c12f5d0426`). Skills `use-case`, `dto`, `resource` e `entity`, com os `references` de padrão. Porta `AtualizarFatosLead`, `AtualizarFatosLeadImpl`, `MarcarGanhoUseCase`, `MarcarPerdidoUseCase`, commands e `POST /funil/leads/{leadId}/ganho` e `/perdido`. Fora da lista, com motivo: `NegocioFunil.comGanho` e `comPerdido`, porque os campos são `final`. Consultas de carga, fila, rodízio e redistribuição sem edição. `EditarFatosLead` sem edição. `./mvnw -q compile` exit 0.
-- Testes: subagente `test-engineer` (id `bc-1487bf88-22af-5194-8cba-af27449422c1`), `MarcarFinalUseCaseTest`. Comando: `TESTCONTAINERS_RYUK_DISABLED=true DOCKER_HOST=unix:///home/felipeamorim/.docker/desktop/docker.sock ./mvnw test`. O relatório Surefire no disco, posterior ao arquivo de teste, registra 10 testes na classe e 275 na suíte, 0 falhas, 0 erros, 0 ignorados, 45 classes. O décimo teste observa o rollback quando a escrita do ganho falha depois da primeira gravação. Sem `verify -DskipITs=false`.
-- Revisão de código: subagente `code-reviewer` (id `bc-db770040-6c19-5a4b-a082-2b96074b9f72`), somente leitura, decisão **APROVADA**. Nenhum ciclo de correção.
-- Segurança: subagente `security-reviewer` (id `bc-5f8e1de2-249b-5f85-ae7c-63d1ec04fc70`), somente leitura, decisão **SEM BLOQUEIO**. Achado não bloqueante em `decisions.md`.
+- Implementação: subagente `implementer` (id `c4ee5ced-2981-4b3e-8644-253d13713e72`). Skills `use-case`, `dto`, `resource` e `entity`, com os `references` de padrão. Porta `AtualizarFatosLead`, `AtualizarFatosLeadImpl`, `MarcarGanhoUseCase`, `MarcarPerdidoUseCase`, commands e `POST /funil/leads/{leadId}/ganho` e `/perdido` (`ADMIN` e `SELLER`, 204). Fora da lista, com motivo: `NegocioFunil.comGanho` e `comPerdido`, porque os campos são `final`. Consultas de carga, fila, rodízio e redistribuição sem edição. `EditarFatosLead` sem edição. `./mvnw -q compile` exit 0.
+- Testes: subagente `test-engineer` (id `cf63b075-b6df-4dd4-9fc1-2b6239555501`), `MarcarFinalUseCaseTest` e `FalhaDuranteGanho`. A primeira `./mvnw test` saiu 1: 284 testes, 3 falhas de mensagem HTTP. O teste passou a esperar as mensagens que os casos de uso já devolviam e continua afirmando que situação e etapa não mudam. Nesta sessão, `./mvnw test` saiu 0. A soma dos relatórios Surefire confirma 275 testes, 0 falhas, 0 erros, 0 ignorados, 45 classes. `MarcarFinalUseCaseTest`: 10, incluindo o rollback depois da primeira escrita. `./mvnw -q compile` nesta sessão saiu 0. Sem `TESTCONTAINERS_RYUK_DISABLED`. Sem `verify -DskipITs=false`.
+- Revisão de código: subagente `code-reviewer` (id `4ebc5628-bbf3-481c-9b4d-f325250f74c0`), somente leitura, decisão **APROVADA**. Nenhum ciclo de correção de produção.
+- Segurança: subagente `security-reviewer` (id `6cae8847-3a33-45b5-92cc-5671edb0f14d`), somente leitura, decisão **SEM BLOQUEIO**. Achado não bloqueante em `decisions.md`.
 - O ciclo colocou a implementação antes dos testes. Não houve rodada vermelha separada antes do código de produção.
+- Sem commit. `dev-keys` não foi lido. Worktree `.worktrees/distribuicao-entidades` não foi modificada.
+
+### T-FV-11
+
+- Implementação: subagente `implementer` (id `f12f01ba-fe27-4efa-bebf-52cab56ac471`). Skills `use-case` e `dto`, com os `references` de padrão. `Contratos.Fatos` ganhou plano fechado, valor fechado, motivo e observação. `EditarFatosLead` chama `FecharLeadNoFunil` só em `GANHO` e `PERDIDO`. Pedido `ABERTA` segue o ramo anterior. `LeadResource` sem edição. Fora da lista, com motivo: método novo de `AtualizarFatosLead` que grava situação, quente, UF e cidade na mesma `comFatos`. As rotas `POST /ganho` e `/perdido` não foram reimplementadas. `./mvnw -q compile` exit 0.
+- Correção 1: o mesmo `implementer`. Hipótese: o fechamento copiava a tarefa 10 sem recusar lead excluído, então mudava etapa, histórico e evento. `FecharLeadNoFunilImpl` passa a lançar «Lead não encontrado» antes de gravar. `./mvnw -q compile` exit 0.
+- Testes: subagente `test-engineer` (id `3424daad-fe85-4b33-a438-1015ea5b92c9`), `EditarFatosFunilTest` (11) e o ajuste de `DistribuicaoResourceTest` onde o ganho ou o perdido sem plano ou motivo deixou de ser 204. Depois da correção, o `test-engineer` (id `02b5ee28-bde1-492b-9f1e-09de4759cfa4`) acrescentou a recusa do lead excluído. Nesta sessão, `./mvnw -q test` saiu 0. A soma dos relatórios Surefire confirma 287 testes, 0 falhas, 0 erros, 0 ignorados, 46 classes. `EditarFatosFunilTest`: 12. Sem `TESTCONTAINERS_RYUK_DISABLED`. Sem `verify -DskipITs=false`.
+- Revisão de código: primeira passagem, subagente `code-reviewer` (id `8d41bd9b-38a2-4536-a73c-aea8f6afd7e1`), **CORREÇÃO NECESSÁRIA**. Segunda passagem, subagente `code-reviewer` (id `d74ca81d-e878-49a4-81db-e209b3b64cb6`), **APROVADA**.
+- Segurança: subagente `security-reviewer` (id `7205a9d6-94af-4265-a428-f9779de106bd`), **SEM BLOQUEIO**. Depois da correção, subagente `security-reviewer` (id `bbe276cd-4b8a-41f4-9391-6233e309b86b`), **SEM BLOQUEIO**. Achados não bloqueantes em `decisions.md`.
+- O ciclo colocou a implementação antes dos testes. Não houve rodada vermelha separada antes do código de produção.
+- Sem commit nesta etapa. `dev-keys` não foi lido. Worktree `.worktrees/distribuicao-entidades` não foi modificada.
+
+### T-FV-12
+
+- Implementação: subagente `implementer` (id `bc-dd50afdd-71d6-5deb-8b7c-cdf98d9edad2`). Skills `query-cqrs`, `dto`, `resource` e `repository`, com os `references` de padrão. `QuadroFunilQuery` (só `uf` e `quente`), `QuadroFunilUseCase`, `QuadroFunilDto` e `GET /funil/quadro`. Fora da lista, com motivo: `NegocioFunilRepository.listarPorEmpresa`, porque o repositório não lia os negócios da empresa. A conta usa `ValorColuna` e `AtrasoEtapa`. `MoverLeadEtapaUseCase` sem edição. `./mvnw -q compile` exit 0.
+- Testes: subagente `test-engineer` (id `bc-2d6b83c5-03ed-5f25-a3fb-10c939b92fed`), `QuadroFunilUseCaseTest` (11). Uma reexecução da classe encontrou `app_user_pkey` duplicada no id também usado por `MarcarFinalUseCaseTest`. Correção só de teste, subagente `test-engineer` (id `bc-cf72c74e-bb84-5014-a8e7-e1a3ef5728c5`): os usuários do quadro passaram ao prefixo `9c1200`. Suíte seguinte, com `TESTCONTAINERS_RYUK_DISABLED=true` e o socket do Docker Desktop: exit 0. Relatórios Surefire: 47 classes, 298 testes, 0 falhas, 0 erros, 0 ignorados. `EditarFatosFunilTest`: 12. `AtrasoEtapaTest`: 2. `MoverLeadEtapaUseCaseTest`: 12. Sem `verify -DskipITs=false`.
+- Revisão de código: subagente `code-reviewer` (id `bc-a41b5945-64bb-5e12-8935-c127ecb68043`), somente leitura, decisão **APROVADA**. Nenhum ciclo de correção de produção.
+- Segurança: subagente `security-reviewer` (id `bc-cfb30756-0feb-55c7-b14a-beb9e770e19e`), somente leitura, decisão **SEM BLOQUEIO**.
 - `dev-keys` não foi lido. Worktree `.worktrees/distribuicao-entidades` não foi modificada.
 
 ## Git

@@ -1,5 +1,6 @@
 package tech.techparterns.funil.infrastructure.persistence;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -39,6 +40,24 @@ public class NegocioFunilRepositoryImpl implements NegocioFunilRepository {
                 .getResultStream()
                 .findFirst()
                 .map(NegocioFunilMapper::toDomain);
+    }
+
+    @Override
+    @Transactional
+    public List<NegocioFunil> listarPorEmpresa(CompanyId companyId) {
+        return em.createQuery("""
+                        select n from NegocioFunilEntity n
+                        where exists (
+                            select e.id from EtapaEntity e
+                            where e.id = n.etapaId and e.companyId = :companyId)
+                          and exists (
+                            select l.id from LeadEntity l
+                            where l.id = n.leadId and l.companyId = :companyId)
+                        """, NegocioFunilEntity.class)
+                .setParameter("companyId", companyId.valor())
+                .getResultStream()
+                .map(NegocioFunilMapper::toDomain)
+                .toList();
     }
 
     @Override
