@@ -1,0 +1,43 @@
+@host = http://localhost:8080
+
+### Gerar token (somente dev). Copie o resultado para @token abaixo
+GET {{host}}/dev/token
+
+###
+@token = COLE_O_TOKEN_AQUI
+
+### Importar leads (acao: ignorar | completar_campos_vazios | criar_mesmo_assim)
+POST {{host}}/leads/importacoes
+Authorization: Bearer {{token}}
+Content-Type: multipart/form-data; boundary=Boundary
+
+--Boundary
+Content-Disposition: form-data; name="acao"
+
+ignorar
+--Boundary
+Content-Disposition: form-data; name="arquivo"; filename="leads.csv"
+Content-Type: text/csv
+
+< ./leads.csv
+--Boundary--
+
+### Importar leads com criar_mesmo_assim
+POST {{host}}/leads/importacoes
+Authorization: Bearer {{token}}
+Content-Type: multipart/form-data; boundary=Boundary
+
+--Boundary
+Content-Disposition: form-data; name="acao"
+
+criar_mesmo_assim
+--Boundary
+Content-Disposition: form-data; name="arquivo"; filename="leads.csv"
+Content-Type: text/csv
+
+< ./leads.csv
+--Boundary--
+
+### Excluir lead (substitua o id)
+DELETE {{host}}/leads/00000000-0000-0000-0000-000000000000
+Authorization: Bearer {{token}}

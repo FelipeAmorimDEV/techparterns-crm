@@ -1,0 +1,59 @@
+---
+description: Orquestra discovery, spec, planejamento, implementação, teste e revisão no TECHPARTNERS-CRM
+alwaysApply: true
+---
+
+# Orquestração
+
+O Composer coordena. Não implementa feature sem spec utilizável e não afirma que um agente rodou sem a ferramenta de subagente ter retornado.
+
+## Ciclo
+
+`DISCOVER` → `REQUIREMENTS ANALYSIS` → `SPEC GENERATION` → `SPEC VALIDATION` → `HUMAN APPROVAL` → `ARCHITECTURE PLANNING` → `TASK DECOMPOSITION` → `IMPLEMENTATION` → `TESTING` → `CODE REVIEW` → `SECURITY REVIEW` (quando houver autenticação, autorização, tenant, dado pessoal, segredo, upload ou integração) → `CORRECTION` → `QUALITY GATE` → `CHECKPOINT` → `NEXT TASK`
+
+Pare na etapa que falhar. Não avance como se estivesse aprovada.
+
+O comando `.cursor/commands/feature-workflow.md`, quando for o pedido ativo, para antes da implementação. Esse comando usa `feature-brainstormer`, `spec-writer`, `spec-validator` e `implementation-planner`. Não os recrie.
+
+## Delegação
+
+Agentes de projeto: arquivos `.cursor/agents/<nome>.md`. Invocação real: ferramenta de subagente `Task`, com `subagent_type` igual ao `name`. O tipo precisa aparecer na lista de subagentes desta sessão.
+
+Se o tipo não estiver na lista, pare, diga qual agente falta e peça para recarregar os agentes ou abrir um modo Agent nesse nome. Não substitua por outro subagente nem escreva a entrega no lugar dele.
+
+O subagente não vê esta conversa. Passe caminhos, decisões já aprovadas e o que devolver. Confira no disco o arquivo que ele deveria gravar.
+
+Análises independentes podem ir em paralelo. Implementações que toquem os mesmos arquivos, o mesmo contrato ou uma decisão `OPEN` são sequenciais. Worktree (`.worktrees/`) só para implementação paralela necessária.
+
+## Specs e estado
+
+No início: leia `.ai-work/execution-plan.md`, `progress.md`, `decisions.md` e `blocked.md`. Confira `git status` e os arquivos citados. Não confie só no checkpoint.
+
+Norma de feature já existente: `docs/features/<slug>/`. `docs/` está no `.gitignore`; glob e busca podem ignorá-la. Abra o caminho.
+
+Índice por contexto: `specs/`. Lá não se inventa regra. Classificação: `CONFIRMED`, `INFERRED`, `OPEN`, `CONFLICTING`. Inferência não libera implementação.
+
+Decisão de revisão está em `validation.md`. O `spec.md` dizer que não está validado é o contrato do `spec-writer`, não uma segunda decisão. Item que o validador deixou para o usuário confirmar continua `OPEN` no comportamento que ele altera.
+
+## Implementação
+
+Antes de codar: spec utilizável, skills em `.claude/skills/` (não existe `skills/`), POM e código do pacote. Um módulo Maven. Wrapper `./mvnw`.
+
+- Compilar: `./mvnw -q compile`
+- Testes Surefire, inclusive `@QuarkusTest`: `./mvnw test`
+- `@QuarkusIntegrationTest`: `./mvnw verify -DskipITs=false` (`skipITs` padrão é `true`)
+- Teste arquitetural automatizado: não há
+
+Não declare sucesso sem o comando que a tarefa exige. Não desative teste. Não mude critério para esconder defeito.
+
+## Correção e gate
+
+No máximo 3 ciclos por tarefa. Cada ciclo tem uma hipótese nova. Sem evidência nova, não repita a tentativa.
+
+`DONE` só com critérios aplicáveis atendidos, testes obrigatórios executados e verdes, limites respeitados, revisão de código aprovada, revisão de segurança feita ou dispensada por escrito, e sem bloqueio conhecido. Verificação impossível fica registrada; a tarefa não fica integralmente validada.
+
+Estados: `PENDING`, `READY`, `IN_PROGRESS`, `BLOCKED`, `REVIEW`, `DONE`, `FAILED`.
+
+## Segurança operacional
+
+Peça autorização para decisão de negócio ainda aberta, mudança arquitetural ampla, operação destrutiva, migração irreversível, produção, push da branch principal e infraestrutura compartilhada. Não exponha credencial. Contexto bloqueado não impede tarefa independente.
