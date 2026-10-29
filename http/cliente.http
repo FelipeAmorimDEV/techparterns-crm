@@ -1,0 +1,386 @@
+@host = http://localhost:8080
+@origin = http://localhost:4200
+
+# =====================================================================
+# Como testar (uma vez)
+#
+# 1. Subir Postgres e Mailpit:
+#      docker compose up -d
+# 2. Subir a API criando o dono SEM senha (troque e-mail e nome):
+#      CRM_OWNER_EMAIL=dono@techpartners.local CRM_OWNER_NOME="Dono Plataforma" ./mvnw quarkus:dev
+# 3. Em outro terminal, definir a senha do dono (o comando pede a senha no console;
+#    ela nunca vai por HTTP):
+#      ./mvnw package -DskipTests
+#      java -Dquarkus.profile=cli -jar target/quarkus-app/quarkus-run.jar definir-senha-dono
+# 4. Abrir este arquivo no cliente HTTP (IntelliJ ou extensão REST Client)
+#    e enviar os blocos de cima para baixo.
+# 5. Tokens de definir senha chegam no Mailpit: http://localhost:8025
+#    O link é .../definir-senha?token=VALOR — cole só o VALOR em @tokenSetupAdmin
+#    ou @tokenSetupVendedor antes do bloco correspondente.
+# 6. Testes automatizados (não usam este arquivo): ./mvnw test
+#
+# Preencha antes de começar:
+# =====================================================================
+
+@ownerEmail = felipecastroo.ads@gmail.com
+@ownerSenha = Devpleno123#
+@adminEmail = admin12@techpartners.local
+@adminSenha = SenhaAdmin@123
+@vendedorEmail = vendedor1@techpartners.local
+@vendedorSenha = SenhaVendedor@123
+@convidadoEmail = convidado1@techpartners.local
+@convidadoSenha = SenhaConvidado@123
+
+# Cole aqui o que o passo anterior devolver (Mailpit ou corpo da resposta).
+@tokenSetupAdmin = wOgO7Ua1DKwiiARTREVKYp47YIhNbIybs8iKnNxFRmQ
+@tokenSetupVendedor = vrbusGzCAYYqd-s_A6jyMQOEiuS5QwURGBYMluIK_kY
+@vendedorId = 7f9528ca-e08e-4501-a5e6-f5d0e447a3f9
+@leadId = 9f249c37-d170-4635-8108-27c30e613def
+@leadIdFila = COLE_O_ID_DEVOLVIDO_PELO_PROXIMO
+
+###############################################################
+# 1. DONO — login
+###############################################################
+
+### 1. Login do dono da plataforma
+# @name loginDono
+POST {{host}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{ownerEmail}}",
+  "senha": "{{ownerSenha}}"
+}
+
+###
+@tokenDono = {{loginDono.response.body.accessToken}}
+
+###############################################################
+# 2. EMPRESA — o dono cria a empresa e o primeiro admin
+#    Resposta 201 traz id. O admin recebe e-mail SETUP no Mailpit.
+###############################################################
+
+### 2. Criar empresa com o primeiro admin
+# @name criarEmpresa
+POST {{host}}/plataforma/empresas
+Authorization: Bearer {{tokenDono}}
+Content-Type: application/json
+
+{
+  "nome": "Empresa Exemplo",
+  "adminNome": "Admin Exemplo",
+  "adminEmail": "{{adminEmail}}",
+  "adminTelefone": "+5511999999999"
+}
+
+###
+@empresaId = {{criarEmpresa.response.body.id}}
+
+### 3. Listar empresas (confere a criada)
+GET {{host}}/plataforma/empresas
+Authorization: Bearer {{tokenDono}}
+
+###############################################################
+# 3. ADMIN — definir senha (token do Mailpit) e entrar
+#    PARE: cole o token do link em @tokenSetupAdmin e envie o bloco 4.
+###############################################################
+
+### 4. Definir senha do admin (202/204). Senha: 8+ caracteres, letra e número
+POST {{host}}/auth/senha/definir
+Content-Type: application/json
+
+{
+  "token": "V17uqzfsapItJVEbRlWCxPdsriOn8SsN80D2uQqiKls",
+  "senha": "{{adminSenha}}"
+}
+
+### 5. Login do admin
+# @name loginAdmin
+POST {{host}}/auth/login
+Content-Type: application/json
+Origin: {{origin}}
+
+{
+  "email": "{{adminEmail}}",
+  "senha": "{{adminSenha}}"
+}
+
+###
+@tokenAdmin = {{loginAdmin.response.body.accessToken}}
+
+### 6. Perfil do admin
+GET {{host}}/me
+Authorization: Bearer {{tokenAdmin}}
+
+###############################################################
+# 4. VENDEDOR — cadastro (202, sem id no corpo), senha e login
+#    Depois do 7, liste (8), copie o id do SELLER para @vendedorId,
+#    cole o token do Mailpit em @tokenSetupVendedor e siga no 9.
+###############################################################
+
+### 7. Cadastrar vendedor (e-mail SETUP vai para o Mailpit)
+POST {{host}}/usuarios
+Authorization: Bearer {{tokenAdmin}}
+Content-Type: application/json
+
+{
+  "nome": "Vendedor Exemplo2",
+  "email": "vendedor2@techpartners.local",
+  "telefone": "+55119777777772",
+  "role": "SELLER"
+}
+
+### 8. Listar usuários e copiar o id do vendedor para @vendedorId
+GET {{host}}/usuarios?role=SELLER&status=ACTIVE
+Authorization: Bearer {{tokenAdmin}}
+
+### 9. Definir senha do vendedor
+POST {{host}}/auth/senha/definir
+Content-Type: application/json
+
+{
+  "token": "38HwKPHh1-R0aKPahw-pLE5H3DTsILAs8xiIkYOMHiU",
+  "senha": "{{vendedorSenha}}"
+}
+
+### 10. Login do vendedor (a fila exige papel SELLER)
+# @name loginVendedor
+POST {{host}}/auth/login
+Content-Type: application/json
+Origin: {{origin}}
+
+{
+  "email": "vendedor2@techpartners.local",
+  "senha": "{{vendedorSenha}}"
+}
+
+###
+@tokenVendedor = {{loginVendedor.response.body.accessToken}}
+
+###############################################################
+# 5. DISTRIBUIÇÃO — config antes da importação
+#    Automática desligada: o lead importado fica sem dono.
+#    Regras de lote: RODIZIO | PESO | CARGA | TERRITORIO
+###############################################################
+
+### 11. Configuração da empresa
+PUT {{host}}/distribuicao/configuracao
+Authorization: Bearer {{tokenAdmin}}
+Content-Type: application/json
+
+{
+  "automatica": false,
+  "regraPadrao": "RODIZIO",
+  "diasParaParado": 5,
+  "devolverParadoAFila": true
+}
+
+### 12. Peso e participação do vendedor (peso 0 a 10)
+PUT {{host}}/distribuicao/vendedores/{{vendedorId}}/configuracao
+Authorization: Bearer {{tokenAdmin}}
+Content-Type: application/json
+
+{
+  "peso": 5,
+  "maxLeadsAbertos": 20,
+  "participa": true
+}
+
+###############################################################
+# 6. LEADS — importar e ler os sem dono
+#    CSV: http/leads.csv (nome_contato,telefone,whatsapp,email)
+#    Ações: ignorar | completar_campos_vazios | criar_mesmo_assim
+#    A importação não devolve ids. Copie um id do passo 14 para @leadId.
+###############################################################
+
+### 13. Importar leads
+POST {{host}}/leads/importacoes
+Authorization: Bearer {{tokenAdmin}}
+Content-Type: multipart/form-data; boundary=Boundary
+
+--Boundary
+Content-Disposition: form-data; name="acao"
+
+ignorar
+--Boundary
+Content-Disposition: form-data; name="arquivo"; filename="leads.csv"
+Content-Type: text/csv
+
+< ./leads.csv
+--Boundary--
+
+### 14. Leads sem dono — copie um id para @leadId
+GET {{host}}/distribuicao/sem-dono
+Authorization: Bearer {{tokenAdmin}}
+
+### 15. Completar UF e cidade (o CSV não traz esses campos)
+PATCH {{host}}/leads/{{leadId}}
+Authorization: Bearer {{tokenAdmin}}
+Content-Type: application/json
+
+{
+  "situacao": "ABERTA",
+  "quente": true,
+  "uf": "SP",
+  "cidade": "Sao Paulo"
+}
+
+### 16. Território do dono. Rode a fila antes de confirmar o lote,
+#    senão não sobra lead na fila.
+###############################################################
+
+### 17. Simular lote (não grava dono)
+POST {{host}}/distribuicao/lotes/simulacao
+Authorization: Bearer {{tokenAdmin}}
+Content-Type: application/json
+
+{
+  "regra": "RODIZIO",
+  "uf": "SP",
+  "cidade": "Sao Paulo",
+  "quente": true
+}
+
+### 18. Vendedor pega o próximo da fila
+# @name proximoFila
+POST {{host}}/distribuicao/fila/proximo
+Authorization: Bearer {{tokenVendedor}}
+
+### vendedor (depois da UF/cidade do lead)
+POST {{host}}/distribuicao/territorios
+Authorization: Bearer {{tokenAdmin}}
+Content-Type: application/json
+
+{
+  "uf": "SP",
+  "cidade": "Sao Paulo",
+  "vendedorId": "{{vendedorId}}"
+}
+
+###############################################################
+# 7. DISTRIBUIR — simular não grava; confirmar grava
+#    A fila pega lead SEM
+@leadIdFila = {{proximoFila.response.body.leadId}}
+
+### 19. Vendedor devolve o lead que acabou de pegar
+POST {{host}}/distribuicao/fila/devolucoes
+Authorization: Bearer {{tokenVendedor}}
+Content-Type: application/json
+
+{
+  "leadId": "{{leadIdFila}}",
+  "motivo": "Fora do perfil"
+}
+
+### 20. Atribuição manual do lead editado
+POST {{host}}/distribuicao/atribuicoes
+Authorization: Bearer {{tokenAdmin}}
+Content-Type: application/json
+
+{
+  "vendedorId": "{{vendedorId}}",
+  "leadIds": ["{{leadId}}"]
+}
+
+### 21. Histórico do lead
+GET {{host}}/distribuicao/leads/{{leadId}}/historico
+Authorization: Bearer {{tokenAdmin}}
+
+### 22. Simular redistribuição da carteira do vendedor (não grava)
+POST {{host}}/distribuicao/carteiras/{{vendedorId}}/simulacao
+Authorization: Bearer {{tokenAdmin}}
+Content-Type: application/json
+
+{
+  "regra": "PESO"
+}
+
+### 23. Confirmar lote do que ainda estiver sem dono
+POST {{host}}/distribuicao/lotes/confirmacao
+Authorization: Bearer {{tokenAdmin}}
+Content-Type: application/json
+
+{
+  "regra": "RODIZIO"
+}
+
+### 24. Verificar leads parados (marca e, se configurado, devolve à fila)
+POST {{host}}/distribuicao/parados/verificacao
+Authorization: Bearer {{tokenAdmin}}
+
+###############################################################
+# 8. CONVITE — o link completo só volta nesta resposta
+###############################################################
+
+### 25. Criar convite
+# @name criarConvite
+POST {{host}}/convites
+Authorization: Bearer {{tokenAdmin}}
+Content-Type: application/json
+
+{
+  "email": "{{convidadoEmail}}",
+  "maxUsos": 1
+}
+
+###
+@conviteId = {{criarConvite.response.body.id}}
+
+### 26. Aceitar convite
+# Cole só o valor de ?token= do campo "link" da resposta 25.
+POST {{host}}/convites/aceitar
+Content-Type: application/json
+
+{
+  "token": "N_dBKgg1AQQSoW_Rf5BZaV6tHKYqTRL4K7jDuKMQNUU",
+  "email": "{{convidadoEmail}}",
+  "nome": "Convidado Exemplo",
+  "telefone": "+5511955555555",
+  "senha": "{{convidadoSenha}}"
+}
+
+### 27. Revogar convite (use outro convite se o 26 já consumiu este)
+POST {{host}}/convites/{{conviteId}}/revogar
+Authorization: Bearer {{tokenAdmin}}
+
+###############################################################
+# 9. FECHO — estes passos alteram senha, dono ou status.
+#    Rode por último.
+###############################################################
+
+### 28. Excluir lead (exclusão lógica)
+DELETE {{host}}/leads/{{leadId}}
+Authorization: Bearer {{tokenAdmin}}
+
+### 29. Renovar sessão do admin (cookie refresh_token do Set-Cookie do login)
+POST {{host}}/auth/sessao/renovar
+Origin: {{origin}}
+Cookie: refresh_token=COLE_O_REFRESH_DO_SET_COOKIE
+
+### 30. Trocar senha do admin (a senha antiga deixa de valer)
+PUT {{host}}/me/senha
+Authorization: Bearer {{tokenAdmin}}
+Content-Type: application/json
+
+{
+  "senhaAtual": "{{adminSenha}}",
+  "novaSenha": "NovaSenhaAdmin@123"
+}
+
+### 31. Suspender empresa
+POST {{host}}/plataforma/empresas/{{empresaId}}/suspender
+Authorization: Bearer {{tokenDono}}
+Content-Type: application/json
+
+{
+  "motivo": "Teste de suspensão"
+}
+
+### 32. Reativar empresa
+POST {{host}}/plataforma/empresas/{{empresaId}}/reativar
+Authorization: Bearer {{tokenDono}}
+
+### 33. Logout do admin
+POST {{host}}/auth/sessao/logout
+Origin: {{origin}}
+Cookie: refresh_token=COLE_O_REFRESH_DO_SET_COOKIE
